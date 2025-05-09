@@ -2,3 +2,5 @@
 backend/.venv/
 backend/__pycache__/
 backend/images/pdfs/.pdf
+__pycache__/
+client_secret.json
