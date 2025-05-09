@@ -1,5 +1,5 @@
 from flask import Flask, redirect, session, request
-from healthapp.data_extraction import get_flow, get_steps, get_heart_rate, get_calories, get_distance
+from healthapp.google_fit import get_flow, get_steps, get_heart_rate, get_calories, get_distance
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
