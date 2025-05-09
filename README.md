@@ -1,1 +1,1 @@
-# avi-cdtm-hacks
+# VisitEase - AI Medical Assistant
