@@ -1,6 +1,6 @@
 .DS_Store
 backend/.venv/
 backend/__pycache__/
-backend/images/pdfs/.pdf
+backend/image-data/pdfs
 __pycache__/
 client_secret.json
