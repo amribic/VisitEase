@@ -1,5 +1,5 @@
 from flask import Flask, redirect, session, request
-from healthapp.data_extraction import get_flow, get_steps
+from healthapp.data_extraction import get_flow, get_steps, get_heart_rate, get_calories, get_distance
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
@@ -32,17 +32,32 @@ def oauth2callback():
 
     creds = flow.credentials
     session['access_token'] = creds.token
-    return redirect('/steps')
+    return redirect('/fitness')
 
 
-@app.route('/steps')
-def steps():
+@app.route('/fitness')
+def fitness():
     access_token = session.get('access_token')
     if not access_token:
         return redirect('/authorize')
 
     steps = get_steps(access_token)
-    return f"Steps in last 24 hours: {steps}"
+    heart_rate = get_heart_rate(access_token)
+    calories = get_calories(access_token)
+    distance = get_distance(access_token) / 1000  # Convert to kilometers
+
+    return f"""
+    <h1>Your Fitness Data (Last 24 Hours)</h1>
+    <p>Steps: {steps}</p>
+    <p>Heart Rate:</p>
+    <ul>
+        <li>Average: {heart_rate['average']:.1f} BPM</li>
+        <li>Minimum: {heart_rate['min']:.1f} BPM</li>
+        <li>Maximum: {heart_rate['max']:.1f} BPM</li>
+    </ul>
+    <p>Calories Burned: {calories:.1f} kcal</p>
+    <p>Distance: {distance:.2f} km</p>
+    """
 
 
 if __name__ == '__main__':

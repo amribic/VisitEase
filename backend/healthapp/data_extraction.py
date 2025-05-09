@@ -24,7 +24,7 @@ def get_flow():
         raise
 
 
-def get_steps(access_token):
+def get_fitness_data(access_token, data_type):
     headers = {
         'Authorization': f'Bearer {access_token}'
     }
@@ -34,7 +34,7 @@ def get_steps(access_token):
 
     body = {
         "aggregateBy": [{
-            "dataTypeName": "com.google.step_count.delta"
+            "dataTypeName": data_type
         }],
         "bucketByTime": {"durationMillis": 86400000},
         "startTimeMillis": start_time,
@@ -47,13 +47,61 @@ def get_steps(access_token):
         json=body
     )
 
+    return res.json()
+
+
+def get_steps(access_token):
+    data = get_fitness_data(access_token, "com.google.step_count.delta")
     steps = 0
     try:
-        for bucket in res.json().get("bucket", []):
+        for bucket in data.get("bucket", []):
             for dataset in bucket.get("dataset", []):
                 for point in dataset.get("point", []):
                     steps += point["value"][0]["intVal"]
     except Exception as e:
         print("Error parsing step data:", e)
-
     return steps
+
+
+def get_heart_rate(access_token):
+    data = get_fitness_data(access_token, "com.google.heart_rate.bpm")
+    heart_rates = []
+    try:
+        for bucket in data.get("bucket", []):
+            for dataset in bucket.get("dataset", []):
+                for point in dataset.get("point", []):
+                    heart_rates.append(point["value"][0]["fpVal"])
+        return {
+            "average": sum(heart_rates) / len(heart_rates) if heart_rates else 0,
+            "min": min(heart_rates) if heart_rates else 0,
+            "max": max(heart_rates) if heart_rates else 0
+        }
+    except Exception as e:
+        print("Error parsing heart rate data:", e)
+        return {"average": 0, "min": 0, "max": 0}
+
+
+def get_calories(access_token):
+    data = get_fitness_data(access_token, "com.google.calories.expended")
+    calories = 0
+    try:
+        for bucket in data.get("bucket", []):
+            for dataset in bucket.get("dataset", []):
+                for point in dataset.get("point", []):
+                    calories += point["value"][0]["fpVal"]
+    except Exception as e:
+        print("Error parsing calories data:", e)
+    return calories
+
+
+def get_distance(access_token):
+    data = get_fitness_data(access_token, "com.google.distance.delta")
+    distance = 0
+    try:
+        for bucket in data.get("bucket", []):
+            for dataset in bucket.get("dataset", []):
+                for point in dataset.get("point", []):
+                    distance += point["value"][0]["fpVal"]
+    except Exception as e:
+        print("Error parsing distance data:", e)
+    return distance  # in meters
