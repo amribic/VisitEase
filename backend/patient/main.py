@@ -272,19 +272,19 @@ def upload_image():
     if file and file.filename.lower().endswith(('.jpg', '.jpeg', '.png')):
         user_id = current_user.id
         bucket = storage.bucket(name='avi-cdtm-hack-team-1613.firebasestorage.app')
-        blob = bucket.blob(f'users/{user_id}/image-data/{image_type}/{uuid}/{file.filename}')
+        blob = bucket.blob(f'users/{user_id}/image-data/{image_type}/{usid}/{file.filename}')
         blob.upload_from_file(file, content_type=file.content_type)
         return jsonify({'success': True, 'message': 'Image uploaded successfully'})
     
     return jsonify({'success': False, 'message': 'Invalid image format'}), 400
 
-def download_images_from_firebase(user_id, image_type, uuid):
+def download_images_from_firebase(user_id, image_type, usid):
     bucket = storage.bucket(name='avi-cdtm-hack-team-1613.firebasestorage.app')
-    prefix = f'users/{user_id}/image-data/{image_type}/{uuid}/'
+    prefix = f'users/{user_id}/image-data/{image_type}/{usid}/'
     blobs = list(bucket.list_blobs(prefix=prefix))
 
     image_files = []
-    for blob in sorted(blobs, key=lambda b: b.name):  # sort alphabetically
+    for blob in sorted(blobs, key=lambda b: b.name):
         img_data = blob.download_as_bytes()
         image_files.append(io.BytesIO(img_data))
 

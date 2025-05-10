@@ -18,7 +18,7 @@ def jpgs_to_pdfs(input_folders, output_folder):
     counter = 1
     for folder in input_folders:
         jpg_files = sorted(
-            [f for f in os.listdir(folder) if f.lower().endswith(".jpg")]
+            [f for f in os.listdir(folder) if f.lower().endswith(".jpeg")]
         )
         image_list = []
 
@@ -37,31 +37,8 @@ def jpgs_to_pdfs(input_folders, output_folder):
 
 # === USAGE EXAMPLE ===
 input_folders = [
-    "images/raw-image-1",
-    "images/raw-image-2",
-    "images/raw-image-3",
-    "images/raw-image-4",
-    "images/raw-image-5",
-    "images/raw-image-6",
-    "images/raw-image-7",
-    "images/raw-image-8",
-    "images/raw-image-9",
-    "images/raw-image-10",
-    "images/raw-image-11",
-    "images/raw-image-12",
-    "images/raw-image-13",
-    "images/raw-image-14",
-    "images/raw-image-15",
-    "images/raw-image-16",
-    "images/raw-image-17",
-    "images/raw-image-18",
-    "images/raw-image-19",
-    "images/raw-image-20",
-    "images/raw-image-21",
-    "images/raw-image-22",
-    "images/raw-image-23",
-    "images/raw-image-24",
-    "images/raw-image-25",
+    "images/insurance_1",
+    "images/insurance_2"
 ]
 
 output_folder = "pdfs"

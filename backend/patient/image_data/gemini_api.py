@@ -8,6 +8,7 @@ import time
 from .classes.DoctorLetter import DoctorLetter
 from .classes.MedicationPlan import MedicationPlan
 from .classes.LabReport import LabReport
+from .classes.InsuranceCard import InsuranceCard
 
 SCHEMA_DOCTOR_LETTER = {
     "reasonForReferral": {
@@ -215,6 +216,41 @@ SCHEMA_LAB_DATA = {
     },
 }
 
+SCHEMA_INSURANCE_CARD = {
+   "name": {
+      "type": "string",
+      "description": "The full name (first and last) of the insured person."
+   },
+   "insuranceProvider": {
+      "type": "string",
+      "description": "The name of the insurance provider."
+   },
+   "insuranceNumber": {
+      "type": "string",
+      "description": "The number of the insurance. Can be found on bottom left of insurance card."
+   },
+   "customerNumber": {
+      "type": "string",
+      "description": "The identifier of the insured person, also known as Versichertennummer. Might start with a letter, usually on bottom of insurance card."
+   },
+   "cardNumber": {
+      "type": "string",
+      "description": "The identifying number of the card. Can be found on the back of the card on the bottom left."
+   },
+   "birthDate": {
+      "type": "string",
+      "description": "Birthdate of the insured person in DD.MM.YYYY format. Can be found on the back of the insurance card on the right side."
+   },
+   "seventhIdentityNumber": {
+      "type": "string",
+      "description": "Kennnummer des Trägers/Krankenkasse"
+   },
+   "expirationDate": {
+      "type": "string",
+      "description": "Expiration date of the insurance card. Can be found on the bottom right of the backside of the card."
+   }
+}
+
 def createMedicationPlan(json_obj, file_path) -> list[MedicationPlan]:
     medicationPlanEntries = []
     for jsonMedicationPlan in json_obj:
@@ -260,6 +296,19 @@ def createDoctorLetter(json_obj, file_path) -> DoctorLetter:
     )
     return doctorLetter
 
+def createInsuranceCard(json_obj, file_path) -> InsuranceCard:
+   insuranceCard = InsuranceCard(
+      name = json_obj["name"],
+      insuranceProvider = json_obj["insuranceProvider"],
+      insuranceNumber = json_obj["insuranceNumber"],
+      customerNumber = json_obj["customerNumber"],
+      cardNumber = json_obj["cardNumber"],
+      birthDate = json_obj["birthDate"],
+      seventhIdentityNumber = json_obj["seventhIdentityNumber"],
+      expirationDate = json_obj["expirationDate"]
+   )
+   return insuranceCard
+
 def call_gemini_api(file_path: str, document_type: str):
       
   load_dotenv()
@@ -276,6 +325,8 @@ def call_gemini_api(file_path: str, document_type: str):
     SCHEMA = SCHEMA_MEDICATION_PLAN
   elif (document_type == "labData"):
     SCHEMA = SCHEMA_LAB_DATA
+  elif (document_type == "insuranceCard"):
+     SCHEMA = SCHEMA_INSURANCE_CARD
   else:
     raise ValueError("Invalid document type. Must be 'doctorLetter', 'medicationPlan', or 'labData'.")
 
@@ -323,15 +374,17 @@ def call_gemini_api(file_path: str, document_type: str):
      return [medicationPlan.to_dict() for medicationPlan in createMedicationPlan(json_obj["medication"], file_path)]
   elif (document_type == "labData"):
     return [labData.to_dict() for labData in createLabData(json_obj["labData"], file_path)]
+  elif (document_type == 'insuranceCard'):
+     return createInsuranceCard(json_obj, file_path).to_dict()
   else:
     raise ValueError("Invalid document type. Must be 'doctorLetter', 'medicationPlan', or 'labData'.") 
 
 
 if __name__ == "__main__":
   # Example usage
-  file_path = "/home/jonasbiermann/VisitEase/backend/patient/image-data/pdfs/lab-report-1.pdf"
-  document_type = "labData" 
+  file_path = "/home/jonasbiermann/VisitEase/backend/patient/image_data/pdfs/image-2.pdf"
+  document_type = "insuranceCard" 
   data = call_gemini_api(file_path, document_type)
 
-  with open("/home/jonasbiermann/VisitEase/backend/patient/image-data/model-output/lab-report-1.json", "w", encoding="utf-8") as f:
+  with open("/home/jonasbiermann/VisitEase/backend/patient/image_data/insurance-card-1.json", "w", encoding="utf-8") as f:
       json.dump(data, f, indent=4, ensure_ascii=False)
