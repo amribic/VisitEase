@@ -1,4 +1,6 @@
 <script lang="ts">
+    import GoogleFitForm from './GoogleFitForm.svelte';
+    
     // Steps data model
     const steps = [
       { title: "Connect Your Insurance", type: "insurance" },
@@ -23,21 +25,12 @@
       uploading = false;
     }
   
-    async function handleDoctorDataUpload(event) {
+    async function handleDoctorDataUpload() {
       // Simulate backend upload
       doctorDataUploaded = false;
       uploading = true;
       await new Promise(r => setTimeout(r, 1000));
       doctorDataUploaded = true;
-      uploading = false;
-    }
-  
-    async function handleGoogleFitConnect() {
-      // Simulate backend call
-      googleFitConnected = false;
-      uploading = true;
-      await new Promise(r => setTimeout(r, 1000));
-      googleFitConnected = true;
       uploading = false;
     }
   
@@ -62,6 +55,15 @@
       const endY = e.changedTouches[0].clientY;
       if (startY - endY > 50) handleContinue(); // swipe up
       if (endY - startY > 50 && currentStep > 0) currentStep -= 1; // swipe down
+    }
+
+    function handleGoogleFitSkip() {
+      handleSkip();
+    }
+
+    function handleGoogleFitContinue() {
+      googleFitConnected = true;
+      handleContinue();
     }
   </script>
   
@@ -95,25 +97,22 @@
             {/if}
           </div>
         {:else if steps[currentStep].type === 'googleFit'}
-          <div class="square-placeholder">
-            {#if googleFitConnected}
-              <div>Google Fit Connected!</div>
-            {:else}
-              <button class="action-btn" on:click={handleGoogleFitConnect} disabled={uploading}>
-                {uploading ? 'Connecting...' : 'Connect Google Fit'}
-              </button>
-            {/if}
-          </div>
+          <GoogleFitForm 
+            on:skip={handleGoogleFitSkip}
+            on:continue={handleGoogleFitContinue}
+          />
         {:else if steps[currentStep].type === 'done'}
           <div class="square-placeholder">
             <div>🎉 All Done! Welcome aboard.</div>
           </div>
         {/if}
       </div>
-      <div class="onboarding-actions">
-        <button class="skip" on:click={handleSkip}>Skip</button>
-        <button class="continue" on:click={handleContinue}>Continue</button>
-      </div>
+      {#if steps[currentStep].type !== 'googleFit'}
+        <div class="onboarding-actions">
+          <button class="skip" on:click={handleSkip}>Skip</button>
+          <button class="continue" on:click={handleContinue}>Continue</button>
+        </div>
+      {/if}
     </div>
   </div>
   
