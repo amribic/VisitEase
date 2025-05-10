@@ -1,4 +1,4 @@
-from flask import Flask, redirect, session, request, render_template_string, flash, url_for
+from flask import Flask, redirect, session, request, render_template_string, flash, url_for, jsonify
 from healthapp.google_fit import get_flow, get_steps, get_heart_rate, get_calories, get_distance, save_fitness_data
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -6,8 +6,11 @@ from firebase_config import get_firestore_db, get_auth
 import json
 import os
 from datetime import timedelta
+from flask_cors import CORS
 
 app = Flask(__name__)
+# Enable CORS for localhost development
+CORS(app, supports_credentials=True, origins=['http://localhost:5173'])
 app.secret_key = 'your_secret_key'  # Change this to a secure secret key in production
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
 app.config['SESSION_COOKIE_SECURE'] = False
@@ -66,91 +69,55 @@ def index():
         <p><a href="{{ url_for('signup') }}">Sign Up</a></p>
     ''')
 
-@app.route('/login', methods=['GET', 'POST'])
+@app.route('/login', methods=['POST'])
 def login():
-    if request.method == 'POST':
-        email = request.form.get('email')
-        password = request.form.get('password')
-        
-        try:
-            user = auth.get_user_by_email(email)
-            flask_user = User(user.uid, email)
-            login_user(flask_user, remember=True)
-            
-            session['user_id'] = user.uid
-            session['email'] = email
-            session.modified = True
-            
-            return redirect(url_for('index'))
-        except auth.UserNotFoundError:
-            flash('User not found')
-        except Exception as e:
-            flash(f'Error: {str(e)}')
-            
-    return render_template_string('''
-        <h1>Login</h1>
-        {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                {% for message in messages %}
-                    <p style="color: red;">{{ message }}</p>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-        <form method="POST">
-            <p>Email: <input type="email" name="email" required></p>
-            <p>Password: <input type="password" name="password" required></p>
-            <p><input type="submit" value="Login"></p>
-        </form>
-        <p><a href="{{ url_for('signup') }}">Don't have an account? Sign up</a></p>
-    ''')
-
-@app.route('/signup', methods=['GET', 'POST'])
-def signup():
-    if request.method == 'POST':
-        email = request.form.get('email')
-        password = request.form.get('password')
-        
-        try:
-            user = auth.create_user(
-                email=email,
-                password=password
-            )
-            
-            db.collection('users').document(user.uid).set({
-                'email': email,
-                'created_at': firestore.SERVER_TIMESTAMP
-            })
-            
-            flask_user = User(user.uid, email)
-            login_user(flask_user, remember=True)
-            
-            session['user_id'] = user.uid
-            session['email'] = email
-            session.modified = True
-            
-            return redirect(url_for('index'))
-            
-        except auth.EmailAlreadyExistsError:
-            flash('Email already exists')
-        except Exception as e:
-            flash(f'Error: {str(e)}')
+    email = request.form.get('email')
+    password = request.form.get('password')
     
-    return render_template_string('''
-        <h1>Sign Up</h1>
-        {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                {% for message in messages %}
-                    <p style="color: red;">{{ message }}</p>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-        <form method="POST">
-            <p>Email: <input type="email" name="email" required></p>
-            <p>Password: <input type="password" name="password" required></p>
-            <p><input type="submit" value="Sign Up"></p>
-        </form>
-        <p><a href="{{ url_for('login') }}">Already have an account? Login</a></p>
-    ''')
+    try:
+        user = auth.get_user_by_email(email)
+        flask_user = User(user.uid, email)
+        login_user(flask_user, remember=True)
+        
+        session['user_id'] = user.uid
+        session['email'] = email
+        session.modified = True
+        
+        return jsonify({'success': True, 'message': 'Login successful'})
+    except auth.UserNotFoundError:
+        return jsonify({'success': False, 'message': 'User not found'}), 401
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/signup', methods=['POST'])
+def signup():
+    email = request.form.get('email')
+    password = request.form.get('password')
+    
+    try:
+        user = auth.create_user(
+            email=email,
+            password=password
+        )
+        
+        db.collection('users').document(user.uid).set({
+            'email': email,
+            'created_at': firestore.SERVER_TIMESTAMP
+        })
+        
+        flask_user = User(user.uid, email)
+        login_user(flask_user, remember=True)
+        
+        session['user_id'] = user.uid
+        session['email'] = email
+        session.modified = True
+        
+        return jsonify({'success': True, 'message': 'Signup successful'})
+        
+    except auth.EmailAlreadyExistsError:
+        return jsonify({'success': False, 'message': 'Email already exists'}), 400
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.route('/logout')
 @login_required

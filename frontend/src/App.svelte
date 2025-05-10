@@ -1,10 +1,32 @@
 <script lang="ts">
-  // Component logic goes here
+  import Login from './components/Login.svelte';
+  import Signup from './components/Signup.svelte';
+  import Success from './components/Success.svelte';
+  
+  let currentPage = 'login';
+
+  function goToSignup() {
+    currentPage = 'signup';
+  }
+
+  function goToLogin() {
+    currentPage = 'login';
+  }
+
+  function goToSuccess() {
+    currentPage = 'success';
+  }
 </script>
 
 <main>
   <div class="container">
-    <h1>Hello World</h1>
+    {#if currentPage === 'signup'}
+      <Signup on:back={goToLogin} />
+    {:else if currentPage === 'success'}
+      <Success />
+    {:else}
+      <Login on:signup={goToSignup} on:success={goToSuccess} />
+    {/if}
   </div>
 </main>
 
@@ -36,68 +58,5 @@
     max-width: 1200px;
     margin: 0 auto;
     padding: 0 1rem;
-  }
-
-  h1 {
-    color: #ff3e00;
-    text-transform: uppercase;
-    font-size: 2rem;
-    font-weight: 100;
-    margin: 0;
-    padding: 0;
-    line-height: 1.2;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-  }
-
-  /* Small phones */
-  @media (max-width: 360px) {
-    h1 {
-      font-size: 1.75rem;
-    }
-  }
-
-  /* Larger phones */
-  @media (min-width: 361px) and (max-width: 767px) {
-    h1 {
-      font-size: 2.25rem;
-    }
-  }
-
-  /* Tablet and larger screens */
-  @media (min-width: 768px) {
-    .container {
-      padding: 0 2rem;
-    }
-    h1 {
-      font-size: 3rem;
-    }
-  }
-
-  /* Desktop screens */
-  @media (min-width: 1024px) {
-    .container {
-      padding: 0 3rem;
-    }
-    h1 {
-      font-size: 3.5rem;
-    }
-  }
-
-  /* Large desktop screens */
-  @media (min-width: 1440px) {
-    h1 {
-      font-size: 4rem;
-    }
-  }
-
-  /* Print styles */
-  @media print {
-    main {
-      min-height: auto;
-    }
-    h1 {
-      color: #000;
-    }
   }
 </style> 
