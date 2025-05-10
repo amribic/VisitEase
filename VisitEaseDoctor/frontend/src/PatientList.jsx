@@ -16,15 +16,15 @@ const avatarColors = [
 ];
 
 const patients = [
-  { name: 'Maria Schmidt', age: 45, gender: 'Female', lastVisit: '15.03.2024' },
-  { name: 'Hans Müller', age: 62, gender: 'Male', lastVisit: '10.03.2024' },
-  { name: 'Klaus Weber', age: 70, gender: 'Male', lastVisit: '05.03.2024' },
-  { name: 'Friedrich Becker', age: 89, gender: 'Male', lastVisit: '01.03.2024' },
-  { name: 'Sophie Fischer', age: 31, gender: 'Female', lastVisit: '20.02.2024' },
-  { name: 'Wilhelm Hoffmann', age: 90, gender: 'Male', lastVisit: '15.02.2024' },
-  { name: 'Anna Wagner', age: 84, gender: 'Female', lastVisit: '10.02.2024' },
-  { name: 'Heinrich Schulz', age: 95, gender: 'Male', lastVisit: '05.02.2024' },
-  { name: 'Elisabeth Bauer', age: 84, gender: 'Female', lastVisit: '01.02.2024' },
+  { name: 'Maria Schmidt', age: 45, gender: 'Female', lastVisit: '15.03.2024', appointmentTime: '09:30, 10 May' },
+  { name: 'Hans Müller', age: 62, gender: 'Male', lastVisit: '10.03.2024', appointmentTime: '11:00, 11 May' },
+  { name: 'Klaus Weber', age: 70, gender: 'Male', lastVisit: '05.03.2024', appointmentTime: '13:15, 12 May' },
+  { name: 'Friedrich Becker', age: 89, gender: 'Male', lastVisit: '01.03.2024', appointmentTime: '15:45, 13 May' },
+  { name: 'Sophie Fischer', age: 31, gender: 'Female', lastVisit: '20.02.2024', appointmentTime: '10:00, 14 May' },
+  { name: 'Wilhelm Hoffmann', age: 90, gender: 'Male', lastVisit: '15.02.2024', appointmentTime: '16:30, 15 May' },
+  { name: 'Anna Wagner', age: 84, gender: 'Female', lastVisit: '10.02.2024', appointmentTime: '08:45, 16 May' },
+  { name: 'Heinrich Schulz', age: 95, gender: 'Male', lastVisit: '05.02.2024', appointmentTime: '12:00, 17 May' },
+  { name: 'Elisabeth Bauer', age: 84, gender: 'Female', lastVisit: '01.02.2024', appointmentTime: '14:00, 18 May' },
 ];
 
 function getInitials(name) {
@@ -72,6 +72,7 @@ function PatientList() {
                 <th>Age</th>
                 <th>Gender</th>
                 <th>Last Visit</th>
+                <th>Appointment Time</th>
               </tr>
             </thead>
             <tbody>
@@ -86,6 +87,7 @@ function PatientList() {
                   <td>{patient.age}</td>
                   <td>{patient.gender}</td>
                   <td>{patient.lastVisit}</td>
+                  <td>{patient.appointmentTime}</td>
                 </tr>
               ))}
             </tbody>
