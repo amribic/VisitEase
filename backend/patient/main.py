@@ -250,9 +250,9 @@ def fitness():
             'data': {
                 'steps': steps,
                 'heart_rate': {
-                    'average': heart_rate.average,
-                    'min': heart_rate.min,
-                    'max': heart_rate.max
+                    'average': heart_rate['average'],
+                    'min': heart_rate['min'],
+                    'max': heart_rate['max']
                 },
                 'calories': calories,
                 'distance': distance
