@@ -159,7 +159,7 @@ def logout():
 @login_required
 def authorize():
     if not current_user.is_authenticated:
-        return redirect(url_for('login'))
+        return jsonify({'error': 'Not authenticated'}), 401
         
     try:
         flow = get_flow()
@@ -175,10 +175,10 @@ def authorize():
             include_granted_scopes='true',
             state=json.dumps(state)
         )
-        return redirect(auth_url)
+        return jsonify({'url': auth_url})
     except Exception as e:
         app.logger.error(f"Error in /authorize: {e}")
-        return f"An error occurred: {e}", 500
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/oauth2callback')
 def oauth2callback():
@@ -189,7 +189,7 @@ def oauth2callback():
         email = state.get('email')
         
         if not user_id or not email:
-            return redirect(url_for('login'))
+            return redirect('http://localhost:5173/login')
             
         # Create user object and log them in
         user = User(user_id, email)
@@ -206,10 +206,11 @@ def oauth2callback():
         session['access_token'] = creds.token
         session.modified = True
         
-        return redirect(url_for('fitness'))
+        # Redirect back to frontend with success status
+        return redirect('http://localhost:5173/google-fit-success')
     except Exception as e:
         app.logger.error(f"Error in callback: {e}")
-        return redirect(url_for('login'))
+        return redirect('http://localhost:5173/login')
 
 @app.route('/fitness')
 @login_required

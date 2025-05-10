@@ -2,8 +2,18 @@
   import Login from './components/Login.svelte';
   import Signup from './components/Signup.svelte';
   import Success from './components/Success.svelte';
+  import GoogleFitForm from './components/GoogleFitForm.svelte';
+  import { onMount } from 'svelte';
   
   let currentPage = 'login';
+
+  onMount(() => {
+    // Check if we're coming back from Google Fit auth
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('success') === 'true') {
+      currentPage = 'google-fit';
+    }
+  });
 
   function goToSignup() {
     currentPage = 'signup';
@@ -16,6 +26,18 @@
   function goToSuccess() {
     currentPage = 'success';
   }
+
+  function goToGoogleFit() {
+    currentPage = 'google-fit';
+  }
+
+  function handleGoogleFitSkip() {
+    goToSuccess();
+  }
+
+  function handleGoogleFitContinue() {
+    goToSuccess();
+  }
 </script>
 
 <main>
@@ -24,8 +46,13 @@
       <Signup on:back={goToLogin} />
     {:else if currentPage === 'success'}
       <Success />
+    {:else if currentPage === 'google-fit'}
+      <GoogleFitForm 
+        on:skip={handleGoogleFitSkip} 
+        on:continue={handleGoogleFitContinue} 
+      />
     {:else}
-      <Login on:signup={goToSignup} on:success={goToSuccess} />
+      <Login on:signup={goToSignup} on:success={goToGoogleFit} />
     {/if}
   </div>
 </main>

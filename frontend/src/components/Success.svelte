@@ -3,13 +3,13 @@
   import { createEventDispatcher } from 'svelte';
   const dispatch = createEventDispatcher();
 
-  let message = 'Login successful';
+  let message = 'Setup Complete!';
   let redirectTimer;
 
   onMount(() => {
     redirectTimer = window.setTimeout(() => {
       window.location.href = '/';
-    }, 2000);
+    }, 3000);
   });
 
   function handleContinue() {
@@ -20,7 +20,7 @@
 
 <div class="success-container">
   <h1>{message}</h1>
-  <p>Redirecting to home page...</p>
+  <p>You're all set! Redirecting to home page...</p>
   <button on:click={handleContinue}>Continue Now</button>
 </div>
 
