@@ -3,7 +3,7 @@ from healthapp.google_fit import get_flow, get_steps, get_heart_rate, get_calori
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 import firebase_admin
-from firebase_admin import credentials, auth, firestore
+from firebase_admin import credentials, auth, firestore, storage
 import json
 import os
 from datetime import timedelta
@@ -21,7 +21,9 @@ app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 # Initialize Firebase
 try:
     cred = credentials.Certificate('../../avi-cdtm-hack-team-1613-firebase-adminsdk-fbsvc-14ccd2ea46.json')
-    firebase_admin.initialize_app(cred)
+    firebase_admin.initialize_app(cred, {
+        'storageBucket': f'gs://avi-cdtm-hack-team-1613.firebasestorage.app'
+    })
 except ValueError:
     pass
 db = firestore.client()
@@ -117,6 +119,28 @@ def signup():
         session['email'] = email
         session.modified = True
         
+        try:
+            # Get a reference to the default storage bucket associated with your project
+            bucket = storage.bucket()
+            print(f"Accessed bucket: {bucket.name}")
+
+            # --- Create the "Folder" (by creating an empty object) ---
+            # Cloud Storage uses a flat namespace. We simulate folders by creating
+            # objects with names containing '/'. Creating an empty object like this
+            # makes the folder appear in the console.
+
+            # Get a blob (object) reference with the desired "folder" name
+            blob = bucket.blob(f'{user.uid}/image-data')
+
+            # Upload an empty string (or empty bytes) to create the object.
+            # This is how you make the folder visible without putting a file inside yet.
+            blob.upload_from_string('')
+
+            print(f"Successfully created 'folder' (empty object) named: {FOLDER_NAME}")
+
+        except Exception as e:
+            print(f"An error occurred while accessing storage or creating the folder: {e}")
+
         return jsonify({'success': True, 'message': 'Signup successful'})
         
     except auth.EmailAlreadyExistsError:
