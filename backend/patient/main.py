@@ -105,7 +105,7 @@ def signup():
             password=password
         )
         
-        db.collection('users').document(user.uid).set({
+        db.collection('users').document(user.uid).collection('profile').document('data').set({
             'email': email,
             'created_at': firestore.SERVER_TIMESTAMP
         })

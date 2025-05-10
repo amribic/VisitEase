@@ -110,7 +110,7 @@ def get_distance(access_token):
 
 # Save fitness data to Firestore
 def save_fitness_data(user_id, steps, heart_rate, calories, distance):
-    fitness_ref = db.collection("fitness_data").document(user_id)
+    fitness_ref = db.collection('users').document(user_id).collection('fitness_data').document('google_fit')
     fitness_ref.set({
         'steps': steps,
         'heart_rate': heart_rate,
