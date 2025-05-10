@@ -424,6 +424,14 @@
     on:touchstart={handleTouchStart}
     on:touchend={handleTouchEnd}
   >
+    {#if uploading}
+      <div class="loading-overlay">
+        <div class="loading-popup">
+          <div class="loading-spinner"></div>
+          <div class="loading-text">Uploading files...</div>
+        </div>
+      </div>
+    {/if}
     <div class="onboarding-container">
       <div class="onboarding-title">{steps[currentStep].title}</div>
       <div class="onboarding-content">
@@ -722,5 +730,49 @@
       font-size: 0.875rem;
       margin-top: 0.5rem;
       text-align: center;
+    }
+
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .loading-popup {
+      background: white;
+      padding: 2rem;
+      border-radius: 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+    }
+
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #6a00ff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    .loading-text {
+      color: #6a00ff;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 1rem;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
   </style>
