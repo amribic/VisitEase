@@ -15,15 +15,15 @@ const avatarColors = [
 ];
 
 const patients = [
-  { name: 'Maria Schmidt', age: 45, gender: 'Weiblich', lastVisit: '15.03.2024' },
-  { name: 'Hans Müller', age: 62, gender: 'Männlich', lastVisit: '10.03.2024' },
-  { name: 'Klaus Weber', age: 70, gender: 'Männlich', lastVisit: '05.03.2024' },
-  { name: 'Friedrich Becker', age: 89, gender: 'Männlich', lastVisit: '01.03.2024' },
-  { name: 'Sophie Fischer', age: 31, gender: 'Weiblich', lastVisit: '20.02.2024' },
-  { name: 'Wilhelm Hoffmann', age: 90, gender: 'Männlich', lastVisit: '15.02.2024' },
-  { name: 'Anna Wagner', age: 84, gender: 'Weiblich', lastVisit: '10.02.2024' },
-  { name: 'Heinrich Schulz', age: 95, gender: 'Männlich', lastVisit: '05.02.2024' },
-  { name: 'Elisabeth Bauer', age: 84, gender: 'Weiblich', lastVisit: '01.02.2024' },
+  { name: 'Maria Schmidt', age: 45, gender: 'Female', lastVisit: '15.03.2024' },
+  { name: 'Hans Müller', age: 62, gender: 'Male', lastVisit: '10.03.2024' },
+  { name: 'Klaus Weber', age: 70, gender: 'Male', lastVisit: '05.03.2024' },
+  { name: 'Friedrich Becker', age: 89, gender: 'Male', lastVisit: '01.03.2024' },
+  { name: 'Sophie Fischer', age: 31, gender: 'Female', lastVisit: '20.02.2024' },
+  { name: 'Wilhelm Hoffmann', age: 90, gender: 'Male', lastVisit: '15.02.2024' },
+  { name: 'Anna Wagner', age: 84, gender: 'Female', lastVisit: '10.02.2024' },
+  { name: 'Heinrich Schulz', age: 95, gender: 'Male', lastVisit: '05.02.2024' },
+  { name: 'Elisabeth Bauer', age: 84, gender: 'Female', lastVisit: '01.02.2024' },
 ];
 
 function getInitials(name) {
@@ -43,34 +43,29 @@ function PatientList() {
   return (
     <div className="patient-app-bg">
       <div className="patient-navbar">
-        <h1 className="patient-list-title">Patienten-/Fallübersicht</h1>
+        <h1 className="patient-list-title">Patient list</h1>
       </div>
       <div className="patient-list-layout">
         <div className="patient-filter-bar">
           <input
             type="text"
-            placeholder="Patient suchen..."
+            placeholder="Search patient..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="patient-search-input"
           />
           {/* Add more filter fields here as needed */}
-          <button className="filter-reset-btn">Filter zurücksetzen</button>
-          <button className="more-filter-btn">Mehr</button>
-        </div>
-        <div className="patient-table-actions">
-          <button className="new-patient-btn">+ Neuer Patient</button>
-          <button className="demo-patient-btn">Demo-Patient anlegen</button>
+          <button className="filter-reset-btn">Reset filter</button>
+          <button className="more-filter-btn">More</button>
         </div>
         <div className="patient-table-wrapper">
           <table className="patient-table">
             <thead>
               <tr>
                 <th>Name</th>
-                <th>Alter</th>
-                <th>Geschlecht</th>
-                <th>Letzter Besuch</th>
-                <th>Aktionen</th>
+                <th>Age</th>
+                <th>Gender</th>
+                <th>Last Visit</th>
               </tr>
             </thead>
             <tbody>
@@ -85,7 +80,6 @@ function PatientList() {
                   <td>{patient.age}</td>
                   <td>{patient.gender}</td>
                   <td>{patient.lastVisit}</td>
-                  <td><button className="register-btn">+ Registrieren</button></td>
                 </tr>
               ))}
             </tbody>
