@@ -204,10 +204,12 @@
     text-decoration: none;
     display: inline;
     -webkit-tap-highlight-color: transparent;
+    width: auto;
   }
 
   .link-button:hover, .link-button:active {
     text-decoration: underline;
+    background: none;
   }
 
   @media (max-width: 480px) {
