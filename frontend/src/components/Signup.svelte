@@ -5,6 +5,8 @@
   let email = '';
   let password = '';
   let confirmPassword = '';
+  let fullName = '';
+  let dateOfBirth = '';
   let error = '';
   let loading = false;
 
@@ -27,7 +29,9 @@
         },
         body: new URLSearchParams({
           email,
-          password
+          password,
+          fullName,
+          dateOfBirth
         }),
         credentials: 'include'
       });
@@ -61,6 +65,27 @@
   {/if}
 
   <form on:submit|preventDefault={handleSubmit}>
+    <div class="form-group">
+      <label for="fullName">Full Name</label>
+      <input
+        type="text"
+        id="fullName"
+        bind:value={fullName}
+        required
+        placeholder="Enter your full name"
+      />
+    </div>
+
+    <div class="form-group">
+      <label for="dateOfBirth">Date of Birth</label>
+      <input
+        type="date"
+        id="dateOfBirth"
+        bind:value={dateOfBirth}
+        required
+      />
+    </div>
+
     <div class="form-group">
       <label for="email">Email</label>
       <input

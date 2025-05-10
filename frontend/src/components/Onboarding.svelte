@@ -514,7 +514,7 @@
           </div>
         {/if}
       </div>
-      {#if steps[currentStep].type !== 'googleFit'}
+      {#if steps[currentStep].type !== 'googleFit' && steps[currentStep].type !== 'done'}
         <div class="onboarding-actions">
           <button class="skip" on:click={handleSkip}>Skip</button>
           <button class="continue" on:click={handleContinue}>Continue</button>

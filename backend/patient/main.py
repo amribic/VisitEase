@@ -104,7 +104,9 @@ def login():
 def signup():
     email = request.form.get('email')
     password = request.form.get('password')
-    print('test2')
+    full_name = request.form.get('fullName')
+    date_of_birth = request.form.get('dateOfBirth')
+    
     try:
         user = auth.create_user(
             email=email,
@@ -113,6 +115,8 @@ def signup():
         
         db.collection('users').document(user.uid).collection('profile').document('data').set({
             'email': email,
+            'full_name': full_name,
+            'date_of_birth': date_of_birth,
             'created_at': firestore.SERVER_TIMESTAMP
         })
         
