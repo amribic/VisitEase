@@ -335,7 +335,7 @@ def convert_images_to_pdf():
         return jsonify({'success': False, 'message': 'No images found in Firebase'}), 404
 
     pdf_url = convert_images_to_pdf_and_upload(image_streams, user_id, image_type, uuid)
-    print(pdf_url)
+    
     if pdf_url:
         return jsonify({'success': True, 'pdf_url': pdf_url})
     else:
