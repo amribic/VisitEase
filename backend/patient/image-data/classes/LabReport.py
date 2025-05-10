@@ -5,14 +5,7 @@ class LabReport:
         self.referenceRange = referenceRange
         self.testName = testName
         self.filePath = filePath
-
-    def __init__(self, labDataDict: dict):
-        self.unit = labDataDict.get("unit", "")
-        self.value = labDataDict.get("value", 0.0)
-        self.referenceRange = labDataDict.get("referenceRange", "")
-        self.testName = labDataDict.get("testName", "")
-        self.filePath = labDataDict.get("filePath", "")
-
+        
     def getUnit(self):
         return self.unit
 
@@ -27,3 +20,12 @@ class LabReport:
 
     def getFilePath(self):
         return self.filePath
+    
+    def to_dict(self):
+        return {
+            "unit": self.unit,
+            "value": self.value,
+            "referenceRange": self.referenceRange,
+            "testName": self.testName,
+            "filePath": self.filePath
+        }

@@ -1,26 +1,16 @@
-from LabReport import LabReport
-from MedicationPlan import MedicationPlan
+from .LabReport import LabReport
+from .MedicationPlan import MedicationPlan
 
 class DoctorLetter:
-    def __init__(self, patientName: str, patientDateOfBirth: str, dateOfLetter: str, reasonForReferral: str, anamnesis: list, clinicalFindings: dict, assessment: list, plan: list, medication: MedicationPlan, contactInformation: dict, labData: LabReport, filePath: str):
-        self.patientName = patientName
-        self.patientDateOfBirth = patientDateOfBirth
-        self.dateOfLetter = dateOfLetter
+    def __init__(self, reasonForReferral: str, anamnesis: list, clinicalFindings: dict, assessment: list, plan: list, medication: MedicationPlan, labData: LabReport, filePath: str):
         self.reasonForReferral = reasonForReferral
         self.anamnesis = anamnesis
         self.clinicalFindings = clinicalFindings
         self.assessment = assessment
         self.plan = plan
         self.medication = medication
-        self.contactInformation = contactInformation
         self.labData = labData
         self.filePath = filePath
-
-    def getPatientName(self) -> str:
-        return self.patientName
-
-    def getPatientDateOfBirth(self):
-        return self.patientDateOfBirth
 
     def getDateOfLetter(self):  
         return self.dateOfLetter
@@ -51,3 +41,16 @@ class DoctorLetter:
 
     def getFilePath(self):
         return self.filePath
+    
+    def to_dict(self):
+        doctorLetter = {
+            "reasonForReferral": self.reasonForReferral,
+            "anamnesis": self.anamnesis,
+            "clinicalFindings": self.clinicalFindings,
+            "assessment": self.assessment,
+            "plan": self.plan,
+            "medication": [medicationEntry.to_dict() for medicationEntry in self.medication],
+            "labData": [labDataEntry.to_dict() for labDataEntry in self.labData],
+            "filePath": self.filePath
+        }
+        return doctorLetter

@@ -11,19 +11,7 @@ class MedicationPlan:
         self.unit = unit
         self.notes = notes
         self.filePath = filePath
-
-    def __init__(self, medicationDict: dict):
-        self.substance = medicationDict.get("substance", "")
-        self.medicationName = medicationDict.get("medicationName", "")
-        self.dosage = medicationDict.get("dosage", "")
-        self.pillForm = medicationDict.get("pillForm", "")
-        self.numberMorning = medicationDict.get("numberMorning", 0.0)
-        self.numberNoon = medicationDict.get("numberNoon", 0.0)
-        self.numberEvening = medicationDict.get("numberEvening", 0.0)
-        self.numberNight = medicationDict.get("numberNight", 0.0)
-        self.unit = medicationDict.get("unit", "")
-        self.notes = medicationDict.get("notes", "")
-
+        
     def getSubstance(self):
         return self.substance
 
@@ -56,3 +44,18 @@ class MedicationPlan:
 
     def getFilePath(self):
         return self.filePath
+    
+    def to_dict(self):
+        return {
+            "substance": self.substance,
+            "medicationName": self.medicationName,
+            "dosage": self.dosage,
+            "pillForm": self.pillForm,
+            "numberMorning": self.numberMorning,
+            "numberNoon": self.numberNoon,
+            "numberEvening": self.numberEvening,
+            "numberNight": self.numberNight,
+            "unit": self.unit,
+            "notes": self.notes,
+            "filePath": self.filePath
+        }
