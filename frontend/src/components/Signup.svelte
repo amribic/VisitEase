@@ -109,7 +109,7 @@
 <style>
   .signup-container {
     background: white;
-    padding: 2rem;
+    padding: 1.5rem;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     max-width: 400px;
@@ -119,7 +119,7 @@
   }
 
   h1 {
-    color: #ff3e00;
+    color: #6a00ff;
     text-transform: uppercase;
     font-size: 2rem;
     font-weight: 100;
@@ -153,14 +153,14 @@
 
   input:focus {
     outline: none;
-    border-color: #ff3e00;
-    box-shadow: 0 0 0 2px rgba(255, 62, 0, 0.1);
+    border-color: #6a00ff;
+    box-shadow: 0 0 0 2px rgba(106, 0, 255, 0.1);
   }
 
   button {
     width: 100%;
     padding: 0.75rem;
-    background-color: #ff3e00;
+    background-color: #6a00ff;
     color: white;
     border: none;
     border-radius: 4px;
@@ -172,7 +172,7 @@
   }
 
   button:hover, button:active {
-    background-color: #ff5722;
+    background-color: #7c1fff;
   }
 
   button:disabled {
@@ -197,7 +197,7 @@
   .link-button {
     background: none;
     border: none;
-    color: #ff3e00;
+    color: #6a00ff;
     padding: 0;
     font: inherit;
     cursor: pointer;
@@ -259,16 +259,6 @@
 
     .form-group {
       margin-bottom: 1rem;
-    }
-  }
-
-  @media (max-width: 600px) {
-    .signup-container {
-      width: 100vw;
-      max-width: 100vw;
-      border-radius: 0;
-      box-shadow: none;
-      padding: 0.5rem;
     }
   }
 </style> 

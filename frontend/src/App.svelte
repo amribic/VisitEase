@@ -58,16 +58,20 @@
 </main>
 
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
+
   :global(html), :global(body) {
     width: 100vw;
     min-height: 100vh;
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    background-color: #f5f5f5;
+    background-color: #f8fff9;
     overflow-x: hidden;
     min-height: 100vh;
     width: 100%;
+    font-family: 'DM Sans', sans-serif;
+    color: #222;
   }
 
   :global(html) {
