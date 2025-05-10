@@ -22,7 +22,7 @@ app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 try:
     cred = credentials.Certificate('../../avi-cdtm-hack-team-1613-firebase-adminsdk-fbsvc-14ccd2ea46.json')
     firebase_admin.initialize_app(cred, {
-        'storageBucket': f'gs://avi-cdtm-hack-team-1613.firebasestorage.app'
+        'storageBucket': 'avi-cdtm-hack-team-1613.appspot.com'
     })
 except ValueError:
     pass
@@ -130,13 +130,13 @@ def signup():
             # makes the folder appear in the console.
 
             # Get a blob (object) reference with the desired "folder" name
-            blob = bucket.blob(f'{user.uid}/image-data')
+            blob = bucket.blob(f'users/{user.uid}/image-data')
 
             # Upload an empty string (or empty bytes) to create the object.
             # This is how you make the folder visible without putting a file inside yet.
             blob.upload_from_string('')
 
-            print(f"Successfully created 'folder' (empty object) named: {FOLDER_NAME}")
+            print(f"Successfully created 'folder' (empty object) named: users/{user.uid}/image-data")
 
         except Exception as e:
             print(f"An error occurred while accessing storage or creating the folder: {e}")
