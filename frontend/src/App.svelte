@@ -1,8 +1,7 @@
 <script lang="ts">
   import Login from './components/Login.svelte';
   import Signup from './components/Signup.svelte';
-  import Success from './components/Success.svelte';
-  import GoogleFitForm from './components/GoogleFitForm.svelte';
+  import Onboarding from './components/Onboarding.svelte';
   import { onMount } from 'svelte';
   
   let currentPage = 'login';
@@ -23,8 +22,8 @@
     currentPage = 'login';
   }
 
-  function goToSuccess() {
-    currentPage = 'success';
+  function goToOnboarding() {
+    currentPage = 'onboarding';
   }
 
   function goToGoogleFit() {
@@ -32,11 +31,11 @@
   }
 
   function handleGoogleFitSkip() {
-    goToSuccess();
+    goToOnboarding();
   }
 
   function handleGoogleFitContinue() {
-    goToSuccess();
+    goToOnboarding();
   }
 </script>
 
@@ -44,15 +43,10 @@
   <div class="container">
     {#if currentPage === 'signup'}
       <Signup on:back={goToLogin} />
-    {:else if currentPage === 'success'}
-      <Success />
-    {:else if currentPage === 'google-fit'}
-      <GoogleFitForm 
-        on:skip={handleGoogleFitSkip} 
-        on:continue={handleGoogleFitContinue} 
-      />
+    {:else if currentPage === 'onboarding'}
+      <Onboarding />
     {:else}
-      <Login on:signup={goToSignup} on:success={goToGoogleFit} />
+      <Login on:signup={goToSignup} on:success={goToOnboarding} />
     {/if}
   </div>
 </main>
