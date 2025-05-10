@@ -272,7 +272,7 @@ def upload_image():
     if file and file.filename.lower().endswith(('.jpg', '.jpeg', '.png')):
         user_id = current_user.id
         bucket = storage.bucket(name='avi-cdtm-hack-team-1613.firebasestorage.app')
-        blob = bucket.blob(f'users/{user_id}/image-data/{image_type}/{usid}/{file.filename}')
+        blob = bucket.blob(f'users/{user_id}/image-data/{image_type}/{uuid}/{file.filename}')
         blob.upload_from_file(file, content_type=file.content_type)
         return jsonify({'success': True, 'message': 'Image uploaded successfully'})
     
