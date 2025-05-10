@@ -1,46 +1,96 @@
 import { useState } from 'react';
+import './PatientList.css';
+
+const avatarColors = [
+  '#F9D97A', // yellow
+  '#B6E2D3', // green
+  '#BFD7F3', // blue
+  '#F7B7A3', // orange
+  '#E2C2F9', // purple
+  '#F9E2AE', // light yellow
+  '#A3D8F7', // light blue
+  '#F7C6C7', // pink
+  '#C2F9E2', // mint
+  '#F9B7E2', // magenta
+];
+
+const patients = [
+  { name: 'Maria Schmidt', age: 45, gender: 'Weiblich', lastVisit: '15.03.2024' },
+  { name: 'Hans Müller', age: 62, gender: 'Männlich', lastVisit: '10.03.2024' },
+  { name: 'Klaus Weber', age: 70, gender: 'Männlich', lastVisit: '05.03.2024' },
+  { name: 'Friedrich Becker', age: 89, gender: 'Männlich', lastVisit: '01.03.2024' },
+  { name: 'Sophie Fischer', age: 31, gender: 'Weiblich', lastVisit: '20.02.2024' },
+  { name: 'Wilhelm Hoffmann', age: 90, gender: 'Männlich', lastVisit: '15.02.2024' },
+  { name: 'Anna Wagner', age: 84, gender: 'Weiblich', lastVisit: '10.02.2024' },
+  { name: 'Heinrich Schulz', age: 95, gender: 'Männlich', lastVisit: '05.02.2024' },
+  { name: 'Elisabeth Bauer', age: 84, gender: 'Weiblich', lastVisit: '01.02.2024' },
+];
+
+function getInitials(name) {
+  return name
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase();
+}
 
 function PatientList() {
-  // Mocked patient data
-  const patients = [
-    { id: 1, name: 'John Doe', age: 34 },
-    { id: 2, name: 'Jane Smith', age: 28 },
-    { id: 3, name: 'Alice Johnson', age: 45 },
-    { id: 4, name: 'Bob Brown', age: 52 },
-    { id: 5, name: 'Charlie Davis', age: 30 },
-    { id: 6, name: 'Diana Evans', age: 39 },
-    { id: 7, name: 'Eve Foster', age: 25 },
-    { id: 8, name: 'Frank Green', age: 47 },
-    { id: 9, name: 'Grace Hall', age: 33 },
-    { id: 10, name: 'Henry Irving', age: 41 },
-  ];
-
   const [searchTerm, setSearchTerm] = useState('');
-
   const filteredPatients = patients.filter(patient =>
     patient.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100%', backgroundColor: '#f5f5f5' }}>
-      <div style={{ backgroundColor: 'white', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-        <h2>Patient List</h2>
-        <input
-          type="text"
-          placeholder="Search patients..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          style={{ width: '100%', padding: '0.5rem', marginBottom: '1rem', border: '1px solid #ddd', borderRadius: '4px' }}
-        />
+    <div className="patient-app-bg">
+      <div className="patient-navbar">
+        <h1 className="patient-list-title">Patienten-/Fallübersicht</h1>
       </div>
-      <div style={{ flex: 1, overflowY: 'auto'}}>
-        <ul style={{ listStyle: 'none', padding: 0 }}>
-          {filteredPatients.map((patient) => (
-            <li key={patient.id} style={{ margin: '0.5em 0', padding: '1rem', backgroundColor: 'white', borderRadius: '4px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-              <strong>{patient.name}</strong> (Age: {patient.age})
-            </li>
-          ))}
-        </ul>
+      <div className="patient-list-layout">
+        <div className="patient-filter-bar">
+          <input
+            type="text"
+            placeholder="Patient suchen..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="patient-search-input"
+          />
+          {/* Add more filter fields here as needed */}
+          <button className="filter-reset-btn">Filter zurücksetzen</button>
+          <button className="more-filter-btn">Mehr</button>
+        </div>
+        <div className="patient-table-actions">
+          <button className="new-patient-btn">+ Neuer Patient</button>
+          <button className="demo-patient-btn">Demo-Patient anlegen</button>
+        </div>
+        <div className="patient-table-wrapper">
+          <table className="patient-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Alter</th>
+                <th>Geschlecht</th>
+                <th>Letzter Besuch</th>
+                <th>Aktionen</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredPatients.map((patient, idx) => (
+                <tr key={patient.name}>
+                  <td>
+                    <span className="patient-avatar-table" style={{ background: avatarColors[idx % avatarColors.length] }}>
+                      {getInitials(patient.name)}
+                    </span>
+                    <span className="patient-fullname">{patient.name}</span>
+                  </td>
+                  <td>{patient.age}</td>
+                  <td>{patient.gender}</td>
+                  <td>{patient.lastVisit}</td>
+                  <td><button className="register-btn">+ Registrieren</button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
