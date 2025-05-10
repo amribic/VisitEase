@@ -8,29 +8,26 @@
   let error = '';
   let successMessage = '';
 
-  onMount(async () => {
-    // Check if we're coming back from Google Fit auth
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('success') === 'true') {
+  onMount(() => {
+    // Add event listener for postMessage from popup window
+    window.addEventListener('message', handlePopupMessage);
+
+    // Check if already connected
+    checkConnectionStatus();
+
+    return () => {
+      window.removeEventListener('message', handlePopupMessage);
+    };
+  });
+
+  function handlePopupMessage(event: MessageEvent) {
+    if (event.data.type === 'GOOGLE_FIT_SUCCESS') {
       isConnected = true;
       successMessage = 'Successfully connected to Google Fit! Your data has been imported.';
-      // Remove the success parameter from the URL
-      window.history.replaceState({}, '', '/google-fit');
-    } else {
-      // Check if already connected
-      try {
-        const response = await fetch('http://localhost:8080/fitness', {
-          credentials: 'include',
-          method: 'HEAD'
-        });
-        isConnected = response.ok;
-        console.log('Google Fit connection status:', isConnected);
-      } catch (e) {
-        console.error('Error checking Google Fit connection:', e);
-        isConnected = false;
-      }
+    } else if (event.data.type === 'GOOGLE_FIT_ERROR') {
+      error = event.data.error || 'Failed to connect to Google Fit. Please try again.';
     }
-  });
+  }
 
   async function connectGoogleFit() {
     isLoading = true;
@@ -46,7 +43,26 @@
         const data = await response.json();
         console.log('Authorization response:', data);
         if (data.url) {
-          window.location.href = data.url;
+          // Open Google login in a popup window
+          const width = 600;
+          const height = 600;
+          const left = window.screenX + (window.outerWidth - width) / 2;
+          const top = window.screenY + (window.outerHeight - height) / 2;
+          
+          const popup = window.open(
+            data.url,
+            'Google Fit Authorization',
+            `width=${width},height=${height},left=${left},top=${top}`
+          );
+
+          // Listen for the popup window to close
+          const checkPopup = setInterval(() => {
+            if (popup?.closed) {
+              clearInterval(checkPopup);
+              // Check if the connection was successful
+              checkConnectionStatus();
+            }
+          }, 500);
         } else {
           error = 'No authorization URL received';
         }
@@ -60,6 +76,20 @@
       console.error('Connection error:', e);
     } finally {
       isLoading = false;
+    }
+  }
+
+  async function checkConnectionStatus() {
+    try {
+      const response = await fetch('http://localhost:8080/fitness', {
+        credentials: 'include',
+        method: 'HEAD'
+      });
+      isConnected = response.ok;
+      console.log('Google Fit connection status:', isConnected);
+    } catch (e) {
+      console.error('Error checking Google Fit connection:', e);
+      isConnected = false;
     }
   }
 

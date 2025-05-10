@@ -208,7 +208,7 @@ def oauth2callback():
         email = state.get('email')
         
         if not user_id or not email:
-            return redirect('http://localhost:5173/login')
+            return jsonify({'error': 'Invalid state'}), 400
             
         # Create user object and log them in
         user = User(user_id, email)
@@ -227,20 +227,70 @@ def oauth2callback():
         
         # Fetch and store fitness data
         try:
+            # Always try to get steps and distance (basic activity data)
             steps = get_steps(creds.token)
-            heart_rate = get_heart_rate(creds.token)
-            calories = get_calories(creds.token)
             distance = get_distance(creds.token) / 1000
             
-            save_fitness_data(user_id, steps, heart_rate, calories, distance)
+            # Try to get heart rate and calories, but don't fail if not available
+            try:
+                heart_rate = get_heart_rate(creds.token)
+            except Exception as e:
+                print(f"Error getting heart rate data: {e}")
+                heart_rate = {"average": 0, "min": 0, "max": 0}
+                
+            try:
+                calories = get_calories(creds.token)
+            except Exception as e:
+                print(f"Error getting calories data: {e}")
+                calories = 0
+            
+            if save_fitness_data(user_id, steps, heart_rate, calories, distance):
+                # Return a success response that will be handled by the popup window
+                return '''
+                <html>
+                    <body>
+                        <script>
+                            window.opener.postMessage({ type: 'GOOGLE_FIT_SUCCESS' }, '*');
+                            window.close();
+                        </script>
+                    </body>
+                </html>
+                '''
+            else:
+                return '''
+                <html>
+                    <body>
+                        <script>
+                            window.opener.postMessage({ type: 'GOOGLE_FIT_ERROR', error: 'Failed to save fitness data' }, '*');
+                            window.close();
+                        </script>
+                    </body>
+                </html>
+                '''
         except Exception as e:
             app.logger.error(f"Error fetching fitness data: {e}")
-        
-        # Redirect back to the same page with success parameter
-        return redirect('http://localhost:5173/google-fit?success=true')
+            return '''
+            <html>
+                <body>
+                    <script>
+                        window.opener.postMessage({ type: 'GOOGLE_FIT_ERROR', error: 'Failed to fetch fitness data' }, '*');
+                        window.close();
+                    </script>
+                </body>
+            </html>
+            '''
     except Exception as e:
         app.logger.error(f"Error in callback: {e}")
-        return redirect('http://localhost:5173/login')
+        return '''
+        <html>
+            <body>
+                <script>
+                    window.opener.postMessage({ type: 'GOOGLE_FIT_ERROR', error: 'Authentication failed' }, '*');
+                    window.close();
+                </script>
+            </body>
+        </html>
+        '''
 
 @app.route('/fitness')
 @login_required

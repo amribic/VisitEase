@@ -7,7 +7,12 @@ from firebase_admin import firestore
 
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
-SCOPES = ['https://www.googleapis.com/auth/fitness.activity.read']
+# Define scopes in order of importance
+SCOPES = [
+    'https://www.googleapis.com/auth/fitness.activity.read',  # Most important - for steps and distance
+    'https://www.googleapis.com/auth/fitness.heart_rate.read',  # Optional - for heart rate
+    'https://www.googleapis.com/auth/fitness.body.read'  # Optional - for body metrics
+]
 REDIRECT_URI = 'http://localhost:8080/oauth2callback'
 CLIENT_SECRETS_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname((os.path.dirname(__file__))))), 'client_secret.json')
 
@@ -43,13 +48,17 @@ def get_fitness_data(access_token, data_type):
         "endTimeMillis": end_time
     }
 
-    res = requests.post(
-        'https://www.googleapis.com/fitness/v1/users/me/dataset:aggregate',
-        headers=headers,
-        json=body
-    )
-
-    return res.json()
+    try:
+        res = requests.post(
+            'https://www.googleapis.com/fitness/v1/users/me/dataset:aggregate',
+            headers=headers,
+            json=body
+        )
+        res.raise_for_status()  # Raise an exception for bad status codes
+        return res.json()
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching fitness data: {e}")
+        return {"bucket": []}
 
 
 def get_steps(access_token):
@@ -66,9 +75,9 @@ def get_steps(access_token):
 
 
 def get_heart_rate(access_token):
-    data = get_fitness_data(access_token, "com.google.heart_rate.bpm")
-    heart_rates = []
     try:
+        data = get_fitness_data(access_token, "com.google.heart_rate.bpm")
+        heart_rates = []
         for bucket in data.get("bucket", []):
             for dataset in bucket.get("dataset", []):
                 for point in dataset.get("point", []):
@@ -110,11 +119,16 @@ def get_distance(access_token):
 
 # Save fitness data to Firestore
 def save_fitness_data(user_id, steps, heart_rate, calories, distance):
-    fitness_ref = db.collection('users').document(user_id).collection('fitness_data').document('google_fit')
-    fitness_ref.set({
-        'steps': steps,
-        'heart_rate': heart_rate,
-        'calories': calories,
-        'distance': distance,
-        'timestamp': firestore.SERVER_TIMESTAMP  # Automatically set the timestamp when data is added
-    })
+    try:
+        fitness_ref = db.collection('users').document(user_id).collection('fitness_data').document('google_fit')
+        fitness_ref.set({
+            'steps': steps,
+            'heart_rate': heart_rate,
+            'calories': calories,
+            'distance': distance,
+            'timestamp': firestore.SERVER_TIMESTAMP
+        })
+        return True
+    except Exception as e:
+        print(f"Error saving fitness data: {e}")
+        return False
