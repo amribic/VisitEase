@@ -2,6 +2,7 @@ from flask import Flask, redirect, session, request, render_template_string, fla
 from healthapp.google_fit import get_flow, get_steps, get_heart_rate, get_calories, get_distance, save_fitness_data
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
+from image_data.gemini_api import call_gemini_api
 import firebase_admin
 from firebase_admin import credentials, auth, firestore, storage
 import json
@@ -268,7 +269,7 @@ def upload_image():
     image_type = request.args.get('image_type')
     uuid = request.args.get('uuid')
     file = request.files.get('image')
-    if file and file.filename.endswith(('.jpg', '.jpeg', '.png')):
+    if file and file.filename.lower().endswith(('.jpg', '.jpeg', '.png')):
         user_id = current_user.id
         bucket = storage.bucket(name='avi-cdtm-hack-team-1613.firebasestorage.app')
         blob = bucket.blob(f'users/{user_id}/image-data/{image_type}/{uuid}/{file.filename}')
@@ -309,6 +310,13 @@ def convert_images_to_pdf_and_upload(image_streams, user_id, image_type, uuid):
         with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
             images[0].save(tmp.name, save_all=True, append_images=images[1:])
             tmp_path = tmp.name
+
+        print(f"Image type: {image_type}")
+        data = call_gemini_api(tmp_path, image_type)
+        if (image_type == "labData" or image_type == "medicationPlan"):
+            data = {image_type: data}
+        print(f"Got the data: \n{data}")
+        db.collection('users').document(user_id).collection(image_type).document(uuid).set(data)
 
         pdf_url = upload_pdf_to_firebase(tmp_path, user_id, image_type, uuid)
         os.remove(tmp_path)

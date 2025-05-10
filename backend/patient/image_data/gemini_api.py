@@ -5,9 +5,9 @@ import os
 from pathlib import Path
 import json
 import time
-from classes.DoctorLetter import DoctorLetter
-from classes.MedicationPlan import MedicationPlan
-from classes.LabReport import LabReport
+from .classes.DoctorLetter import DoctorLetter
+from .classes.MedicationPlan import MedicationPlan
+from .classes.LabReport import LabReport
 
 SCHEMA_DOCTOR_LETTER = {
     "reasonForReferral": {
@@ -314,8 +314,8 @@ def call_gemini_api(file_path: str, document_type: str):
   json_reponse = responses[1]
 
   json_obj = json.loads(json_reponse)
-  with open("/home/jonasbiermann/VisitEase/backend/patient/image-data/model-output/model-output-1.json", "w") as json_file:
-      json.dump(json_obj, json_file, indent=4, ensure_ascii=False)
+  """ with open("/home/jonasbiermann/VisitEase/backend/patient/image-data/model-output/model-output-1.json", "w") as json_file:
+      json.dump(json_obj, json_file, indent=4, ensure_ascii=False) """
 
   if (document_type == "doctorLetter"):
     return createDoctorLetter(json_obj, file_path).to_dict()

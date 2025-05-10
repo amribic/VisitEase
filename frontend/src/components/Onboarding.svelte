@@ -59,13 +59,13 @@
     async function handleFileUpload(file, type) {
       uploading = true;
       // Reset all errors/success for the current type
-      if (type === 'lab-report') {
+      if (type === 'labData') {
         labReportError = '';
         labReportSuccess = '';
-      } else if (type === 'doctor-letter') {
+      } else if (type === 'doctorLetter') {
         doctorLetterError = '';
         doctorLetterSuccess = '';
-      } else if (type === 'medical-information') {
+      } else if (type === 'medicationPlan') {
         medicalInfoError = '';
         medicalInfoSuccess = '';
       }
@@ -74,9 +74,9 @@
       formData.append('image', file);
 
       let uuid = '';
-      if (type === 'lab-report') uuid = labReportUuid;
-      else if (type === 'doctor-letter') uuid = doctorLetterUuid;
-      else if (type === 'medical-information') uuid = medicalInfoUuid;
+      if (type === 'labData') uuid = labReportUuid;
+      else if (type === 'doctorLetter') uuid = doctorLetterUuid;
+      else if (type === 'medicationPlan') uuid = medicalInfoUuid;
 
       console.log('Uploading file:', file);
       console.log('Upload type:', type);
@@ -93,13 +93,13 @@
         console.log('Upload response data:', data);
         
         if (data.success) {
-          if (type === 'lab-report') {
+          if (type === 'labData') {
             labReportUploaded = true;
             labReportSuccess = 'File uploaded successfully!';
-          } else if (type === 'doctor-letter') {
+          } else if (type === 'doctorLetter') {
             doctorLetterUploaded = true;
             doctorLetterSuccess = 'File uploaded successfully!';
-          } else if (type === 'medical-information') {
+          } else if (type === 'medicationPlan') {
             medicalInfoUploaded = true;
             medicalInfoSuccess = 'File uploaded successfully!';
           }
@@ -124,21 +124,21 @@
             console.error('Error calling convert_images_to_pdf:', pdfError);
           }
         } else {
-          if (type === 'lab-report') {
+          if (type === 'labData') {
             labReportError = data.message || 'Upload failed';
-          } else if (type === 'doctor-letter') {
+          } else if (type === 'doctorLetter') {
             doctorLetterError = data.message || 'Upload failed';
-          } else if (type === 'medical-information') {
+          } else if (type === 'medicationPlan') {
             medicalInfoError = data.message || 'Upload failed';
           }
         }
       } catch (error) {
         console.error('Upload error:', error);
-        if (type === 'lab-report') {
+        if (type === 'labData') {
           labReportError = 'Failed to upload file. Please try again.';
-        } else if (type === 'doctor-letter') {
+        } else if (type === 'doctorLetter') {
           doctorLetterError = 'Failed to upload file. Please try again.';
-        } else if (type === 'medical-information') {
+        } else if (type === 'medicationPlan') {
           medicalInfoError = 'Failed to upload file. Please try again.';
         }
       } finally {
@@ -149,21 +149,21 @@
     async function handleLabReportUpload(event) {
       const file = event.currentTarget.files?.[0];
       if (file) {
-        await handleFileUpload(file, 'lab-report');
+        await handleFileUpload(file, 'labData');
       }
     }
 
     async function handleDoctorLetterUpload(event) {
       const file = event.currentTarget.files?.[0];
       if (file) {
-        await handleFileUpload(file, 'doctor-letter');
+        await handleFileUpload(file, 'doctorLetter');
       }
     }
 
     async function handleMedicalInfoUpload(event) {
       const file = event.currentTarget.files?.[0];
       if (file) {
-        await handleFileUpload(file, 'medical-information');
+        await handleFileUpload(file, 'medicationPlan');
       }
     }
   
