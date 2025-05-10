@@ -12,6 +12,16 @@ from flask_cors import CORS
 from PIL import Image
 import tempfile
 import io
+import uuid
+from threading import Lock
+import asyncio
+import wave
+from flask import make_response
+from google.cloud import speech_v1p1beta1 as speech
+from conversation.speech_api import transcribe_audio_in_memory, process_transcription, export_config, getSchemas, model_user_data
+
+conversations = {}
+conversations_lock = Lock()
 
 app = Flask(__name__)
 # Enable CORS for localhost development
@@ -113,7 +123,7 @@ def signup():
             password=password
         )
         
-        db.collection('users').document(user.uid).collection('profile').document('data').set({
+        db.collection('users').document(user.uid).set({
             'email': email,
             'full_name': full_name,
             'date_of_birth': date_of_birth,
@@ -324,9 +334,9 @@ def convert_images_to_pdf_and_upload(image_streams, user_id, image_type, uuid):
         
         # Format the data based on type
         if (image_type == "labData" or image_type == "medicationPlan"):
-            data = {image_type: data}
-            
-        # Save the data to Firestore
+            data = {image_type: data, 'created_at': firestore.SERVER_TIMESTAMP}
+        else:
+            data['created_at'] = firestore.SERVER_TIMESTAMP
         print(f"Got the data: \n{data}")
         db.collection('users').document(user_id).collection(image_type).document(uuid).set(data)
 
@@ -366,6 +376,140 @@ def convert_images_to_pdf():
     else:
         return jsonify({'success': False, 'message': 'PDF generation failed'}), 500
 
+@app.route('/start-conversation', methods=['POST'])
+@login_required
+def start_conversation():
+    client, model, config, CONVERSATIONAL_PROMPT = export_config()
+    SCHEMA_DOCTOR_LETTER, SCHEMA_MEDICATION_PLAN, SCHEMA_LAB_DATA, SCHEMA_INSURANCE_CARD = getSchemas()
+    user_model_dict = model_user_data(current_user.id)
+
+    CONVERSATIONAL_PROMPT = f"""
+        You are an empathetic healthcare professional who is supposed to have a short conversation with a patient who potentially already shared some relevant patient data like recent lab results, doctor's letters, their insurance card information and a medication plan. Your goal is to use the context provided in a single dictionary to derive natural language questions that can bring valuable insight into the state and well-being of the patient for a doctor but also not overwhelm the user in their complexity and length. Make sure to use relatively simple language and be empathetic.
+        The following schemas detail how the inputs of the user might be structured for each type of input. These inputs are possible:
+        * insuranceCard (Insurance Card Data)
+        * doctorLetter (The most recent Doctor Letter (Arztbrief))
+        * labData (The most recent data gathered from a laboratory analysis)
+        * medicationPlan (A medication plan detailing what medication to take at which times)
+
+        The Schema are defined as follows
+        insuranceCard:
+        {SCHEMA_INSURANCE_CARD}
+        doctorLetter:
+        {SCHEMA_DOCTOR_LETTER}
+        labData:
+        {SCHEMA_LAB_DATA}
+        medicationPlan:
+        {SCHEMA_MEDICATION_PLAN}
+
+        You will receive the contextual user data in a dictionary that uses the previously defined inputs as keys (i.e. 'insuranceCard', 'doctorLetter', 'labData', 'medicationPlan') and the corresponding dictionary (defined by the SCHEMA) as the value.
+
+        Your task is to lead a natural conversation and ask a maximum of 5 questions to find out how the patient feels. Your goal is to find out what the doctors can't describe in their letters and lab analysis - the patients feelings and emotions. 
+
+        If you notice that the patient wants to end the conversation specifically ask him if he wants to end the conversation. Usually you can assume that they want to continue but if you notice the patient getting aggravated feel free to ask them to stop right there. You can also just end the conversation early by saying these are all the questions I wanted to ask today, thank you for your time. That way the user doesn't even realize that you just purposefully ended the conversation in order to avoid confrontation.
+
+        For undefined behavior, i.e. queries or answers that have nothing to do with the medical history of the patient and are in general not related to the healthcare of the patient at all are not to be answered. You can just respond with the standard reponse of: "At this time I'm not able to make a comment about this specific topic, let's continue talking about your health".
+
+        Do not try to match the users style of speaking (i.e. slang, millenial...) as this might irritate them. The following dictonary is the described user context:
+
+        {json.dumps(user_model_dict, indent=4, ensure_ascii=False)}
+"""
+
+    conv_id = str(uuid.uuid4())
+    audio_buffer = io.BytesIO()
+    wf = wave.open(audio_buffer, 'wb')
+    wf.setnchannels(1)
+    wf.setsampwidth(2)  # 16-bit
+    wf.setframerate(24000)
+
+    async def start_session():
+        session = await client.aio.live.connect(model=model, config=config)
+        await session.send_client_content(
+            turns={"role": "user", "parts": [{"text": CONVERSATIONAL_PROMPT}]},
+            turn_complete=True
+        )
+        return session
+
+    session = asyncio.run(start_session())
+
+    async def get_first_response(session):
+        async for response in session.receive():
+            if response.data is not None:
+                wf.writeframes(response.data)
+                return response.data
+            break
+        return None
+
+    first_response = asyncio.run(get_first_response(session))
+
+    with conversations_lock:
+        conversations[conv_id] = {
+            'session': session,
+            'wf': wf,
+            'audio_buffer': audio_buffer,
+            'turn': 0
+        }
+
+    response = make_response(first_response)
+    response.headers['Content-Type'] = 'audio/wav'
+    response.headers['Conversation-ID'] = conv_id
+    return response
+
+@app.route('/conversation-turn', methods=['POST'])
+@login_required
+def conversation_turn():
+    conv_id = request.form.get('conv_id')
+    user_audio = request.data
+
+    with conversations_lock:
+        if conv_id not in conversations:
+            return jsonify({'error': 'Conversation not found'}), 404
+        conv = conversations[conv_id]
+
+    conv['wf'].writeframes(user_audio)
+
+    async def send_user_audio(session, audio):
+        await session.send_client_content(
+            turns={"role": "user", "parts": [{"audio": audio}]},
+            turn_complete=True
+        )
+
+    asyncio.run(send_user_audio(conv['session'], user_audio))
+
+    async def get_model_response(session):
+        async for response in session.receive():
+            if response.data is not None:
+                conv['wf'].writeframes(response.data)
+                return response.data
+            break
+        return None
+
+    model_response = asyncio.run(get_model_response(conv['session']))
+
+    conv['turn'] += 1
+    if conv['turn'] >= 5:
+        response = make_response(model_response)
+        response.headers['Content-Type'] = 'audio/wav'
+        response.headers['Conversation-End'] = 'true'
+        
+        with conversations_lock:
+            if conv_id not in conversations:
+                return jsonify({'error': 'Conversation not found'}), 404
+            conv = conversations[conv_id]
+
+        conv['wf'].close()
+        audio_content = conv['audio_buffer'].getvalue()
+
+        transcription = transcribe_audio_in_memory(audio_content)
+        structured_data = process_transcription(transcription)
+
+        with conversations_lock:
+            del conversations[conv_id]
+        db.collection('users').document(current_user.id).collection('conversation').document(conv_id).set(structured_data)
+        return response
+    else:
+        response = make_response(model_response)
+        response.headers['Content-Type'] = 'audio/wav'
+        return response
 
 if __name__ == '__main__':
     app.run(port=8080, debug=True, use_reloader=False)
