@@ -9,7 +9,7 @@ os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 SCOPES = ['https://www.googleapis.com/auth/fitness.activity.read']
 REDIRECT_URI = 'http://localhost:8080/oauth2callback'
-CLIENT_SECRETS_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'client_secret.json')
+CLIENT_SECRETS_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname((os.path.dirname(__file__))))), 'client_secret.json')
 
 
 def get_flow():
