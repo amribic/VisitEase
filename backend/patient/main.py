@@ -564,7 +564,41 @@ def conversation_turn():
 @app.route('/get-structured-data', methods=["GET"])
 @login_required
 def get_structured_data():
-    return model_user_data(current_user.id)
+    user_id = request.args.get('user_id')
+    return model_user_data(user_id)
+
+@app.route('/get-pdf-by-type-for-user', methods=["GET"])
+@login_required
+def get_user_type_pdf():
+    user_id = request.args.get('user_id')
+    file_type = request.args.get('file_type')
+
+    if not user_id or not file_type:
+        return jsonify({"error": "Missing user_id or file_type"}), 400
+    
+    prefix = f"users{user_id}/pdf-data/{file_type}/"
+
+    try:
+        client = storage.Client()
+        bucket = client.bucket(name='avi-cdtm-hack-team-1613.firebasestorage.app')
+        blobs = list(bucket.list_blobs(prefix=prefix))
+
+        if not blobs:
+            return jsonify({"error": "No files found"}), 404
+        
+        newest_blob = sorted(blobs, key=lambda b:b.updated, reverse=True)[0]
+
+        url = newest_blob.generate_signed_url(
+            version="v4",
+            expiration=timedelta(minutes=15),
+            method="GET",
+            response_disposition='inline' #i frame preview
+        )
+
+        return jsonify({"url": url, "name": newest_blob.name})
+    
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(port=8080, debug=True, use_reloader=False)
