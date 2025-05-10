@@ -73,7 +73,7 @@
       uploading = false;
     }
   
-    async function handleFileUpload(file: File, type: string) {
+    async function handleFileUpload(files: FileList, type: string) {
       uploading = true;
       // Reset all errors/success for the current type
       if (type === 'labData') {
@@ -87,76 +87,64 @@
         medicalInfoSuccess = '';
       }
 
-      const formData = new FormData();
-      formData.append('image', file);
-
       let uuid = '';
       if (type === 'labData') uuid = labReportUuid;
       else if (type === 'doctorLetter') uuid = doctorLetterUuid;
       else if (type === 'medicationPlan') uuid = medicalInfoUuid;
 
-      console.log('Uploading file:', file);
-      console.log('Upload type:', type);
-      console.log('Upload uuid:', uuid);
-
       try {
-        const response = await fetch(`http://localhost:8080/upload-image?image_type=${type}&uuid=${uuid}`, {
+        // Upload all files first
+        for (let i = 0; i < files.length; i++) {
+          const formData = new FormData();
+          formData.append('image', files[i]);
+
+          const response = await fetch(`http://localhost:8080/upload-image?image_type=${type}&uuid=${uuid}`, {
+            method: 'POST',
+            body: formData,
+            credentials: 'include'
+          });
+          const data = await response.json();
+          
+          if (!data.success) {
+            throw new Error(data.message || 'Upload failed');
+          }
+        }
+
+        // After all files are uploaded, trigger PDF conversion
+        const pdfForm = new FormData();
+        pdfForm.append('image_type', type);
+        pdfForm.append('uuid', uuid);
+        
+        const pdfResponse = await fetch('http://localhost:8080/convert-images-to-pdf', {
           method: 'POST',
-          body: formData,
+          body: pdfForm,
           credentials: 'include'
         });
-        console.log('Upload response:', response);
-        const data = await response.json();
-        console.log('Upload response data:', data);
+        const pdfData = await pdfResponse.json();
         
-        if (data.success) {
+        if (pdfData.success) {
           if (type === 'labData') {
             labReportUploaded = true;
-            labReportSuccess = 'File uploaded successfully!';
+            labReportSuccess = `${files.length} file(s) uploaded and processed successfully!`;
           } else if (type === 'doctorLetter') {
             doctorLetterUploaded = true;
-            doctorLetterSuccess = 'File uploaded successfully!';
+            doctorLetterSuccess = `${files.length} file(s) uploaded and processed successfully!`;
           } else if (type === 'medicationPlan') {
             medicalInfoUploaded = true;
-            medicalInfoSuccess = 'File uploaded successfully!';
+            medicalInfoSuccess = `${files.length} file(s) uploaded and processed successfully!`;
           }
-
-          // Call convert_images_to_pdf after successful upload
-          const pdfForm = new FormData();
-          pdfForm.append('image_type', type);
-          pdfForm.append('uuid', uuid);
-          try {
-            const pdfResponse = await fetch('http://localhost:8080/convert-images-to-pdf', {
-              method: 'POST',
-              body: pdfForm,
-              credentials: 'include'
-            });
-            const pdfData = await pdfResponse.json();
-            if (pdfData.success) {
-              console.log('PDF generated:', pdfData.pdf_url);
-            } else {
-              console.error('PDF generation failed:', pdfData.message);
-            }
-          } catch (pdfError) {
-            console.error('Error calling convert_images_to_pdf:', pdfError);
-          }
+          console.log('PDF generated:', pdfData.pdf_url);
         } else {
-          if (type === 'labData') {
-            labReportError = data.message || 'Upload failed';
-          } else if (type === 'doctorLetter') {
-            doctorLetterError = data.message || 'Upload failed';
-          } else if (type === 'medicationPlan') {
-            medicalInfoError = data.message || 'Upload failed';
-          }
+          throw new Error(pdfData.message || 'PDF generation failed');
         }
       } catch (error) {
         console.error('Upload error:', error);
         if (type === 'labData') {
-          labReportError = 'Failed to upload file. Please try again.';
+          labReportError = 'Failed to process files. Please try again.';
         } else if (type === 'doctorLetter') {
-          doctorLetterError = 'Failed to upload file. Please try again.';
+          doctorLetterError = 'Failed to process files. Please try again.';
         } else if (type === 'medicationPlan') {
-          medicalInfoError = 'Failed to upload file. Please try again.';
+          medicalInfoError = 'Failed to process files. Please try again.';
         }
       } finally {
         uploading = false;
@@ -172,7 +160,7 @@
         insuranceSuccess = '';
 
         try {
-          // First upload all files
+          // Upload all files first
           for (let i = 0; i < files.length; i++) {
             const formData = new FormData();
             formData.append('image', files[i]);
@@ -221,9 +209,7 @@
       const target = event.target as HTMLInputElement;
       const files = target.files;
       if (files && files.length > 0) {
-        for (let i = 0; i < files.length; i++) {
-          await handleFileUpload(files[i], 'labData');
-        }
+        await handleFileUpload(files, 'labData');
       }
     }
 
@@ -231,9 +217,7 @@
       const target = event.target as HTMLInputElement;
       const files = target.files;
       if (files && files.length > 0) {
-        for (let i = 0; i < files.length; i++) {
-          await handleFileUpload(files[i], 'doctorLetter');
-        }
+        await handleFileUpload(files, 'doctorLetter');
       }
     }
 
@@ -241,9 +225,7 @@
       const target = event.target as HTMLInputElement;
       const files = target.files;
       if (files && files.length > 0) {
-        for (let i = 0; i < files.length; i++) {
-          await handleFileUpload(files[i], 'medicationPlan');
-        }
+        await handleFileUpload(files, 'medicationPlan');
       }
     }
 

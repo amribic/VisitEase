@@ -273,11 +273,17 @@ def createMedicationPlan(json_obj, file_path) -> list[MedicationPlan]:
 def createLabData(json_obj, file_path) -> list[LabReport]:
     labDataEntries = []
     for jsonLabData in json_obj:
+        # Handle missing or null values with defaults
+        unit = jsonLabData.get("unit", "none")
+        value = jsonLabData.get("value", 0.0)
+        referenceRange = jsonLabData.get("referenceRange", "none")
+        testName = jsonLabData.get("testName", "none")
+        
         labData = LabReport(
-            unit=jsonLabData["unit"],
-            value=jsonLabData["value"],
-            referenceRange=jsonLabData["referenceRange"],
-            testName=jsonLabData["testName"],
+            unit=unit,
+            value=value,
+            referenceRange=referenceRange,
+            testName=testName,
             filePath=file_path
         )
         labDataEntries.append(labData)
@@ -375,7 +381,9 @@ def call_gemini_api(file_path: str, document_type: str):
     try:
       print("Lab Data Response Structure:", json.dumps(json_obj, indent=2))
       # For lab data, we need to access the labData array from the response
-      lab_data = json_obj["labData"]
+      lab_data = json_obj.get("labData", [])
+      if not isinstance(lab_data, list):
+          lab_data = [lab_data]  # Convert single object to list if needed
       print("Lab Data Array:", json.dumps(lab_data, indent=2))
       return [labData.to_dict() for labData in createLabData(lab_data, file_path)]
     except Exception as e:
