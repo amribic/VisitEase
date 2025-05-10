@@ -91,11 +91,10 @@
     padding: 1rem;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    max-width: 100%;
+    max-width: 400px; 
     width: 100%;
     margin: 0 auto;
-    max-height: 100vh;
-    overflow-y: auto;
+    position: relative;
   }
 
   h1 {
@@ -127,6 +126,8 @@
     border-radius: 4px;
     font-size: 1rem;
     box-sizing: border-box;
+    -webkit-appearance: none;
+    appearance: none;
   }
 
   input:focus {
@@ -145,9 +146,11 @@
     font-size: 1rem;
     cursor: pointer;
     transition: background-color 0.2s;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
   }
 
-  button:hover {
+  button:hover, button:active {
     background-color: #ff5722;
   }
 
@@ -179,33 +182,62 @@
     cursor: pointer;
     text-decoration: none;
     display: inline;
+    -webkit-tap-highlight-color: transparent;
   }
 
-  .link-button:hover {
+  .link-button:hover, .link-button:active {
     text-decoration: underline;
   }
 
   @media (max-width: 480px) {
     .login-container {
+      padding: 1.5rem;
+      margin: 0.5rem;
+      border-radius: 0;
+      box-shadow: none;
+      background: transparent;
+    }
+
+    h1 {
+      font-size: 1.75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+
+    input {
+      padding: 0.875rem;
+      font-size: 16px; /* Prevents iOS zoom on focus */
+    }
+
+    button {
+      padding: 0.875rem;
+      font-size: 1rem;
+    }
+
+    .error-message {
+      padding: 0.875rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .signup-link {
+      margin-top: 1.25rem;
+    }
+  }
+
+  @media (max-height: 600px) {
+    .login-container {
       padding: 1rem;
     }
 
     h1 {
-      font-size: 1.5rem;
+      margin-bottom: 1rem;
     }
 
-    button {
-      padding: 0.5rem;
-    }
-  }
-
-  @media (max-width: 600px) {
-    .login-container {
-      width: 100vw;
-      max-width: 100vw;
-      border-radius: 0;
-      box-shadow: none;
-      padding: 0.5rem;
+    .form-group {
+      margin-bottom: 1rem;
     }
   }
 </style> 

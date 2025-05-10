@@ -115,6 +115,7 @@
     max-width: 400px;
     width: 100%;
     margin: 0 auto;
+    position: relative;
   }
 
   h1 {
@@ -146,6 +147,8 @@
     border-radius: 4px;
     font-size: 1rem;
     box-sizing: border-box;
+    -webkit-appearance: none;
+    appearance: none;
   }
 
   input:focus {
@@ -164,9 +167,11 @@
     font-size: 1rem;
     cursor: pointer;
     transition: background-color 0.2s;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
   }
 
-  button:hover {
+  button:hover, button:active {
     background-color: #ff5722;
   }
 
@@ -198,19 +203,62 @@
     cursor: pointer;
     text-decoration: none;
     display: inline;
+    -webkit-tap-highlight-color: transparent;
   }
 
-  .link-button:hover {
+  .link-button:hover, .link-button:active {
     text-decoration: underline;
   }
 
   @media (max-width: 480px) {
     .signup-container {
       padding: 1.5rem;
+      margin: 0.5rem;
+      border-radius: 0;
+      box-shadow: none;
+      background: transparent;
     }
 
     h1 {
       font-size: 1.75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+
+    input {
+      padding: 0.875rem;
+      font-size: 16px; /* Prevents iOS zoom on focus */
+    }
+
+    button {
+      padding: 0.875rem;
+      font-size: 1rem;
+    }
+
+    .error-message {
+      padding: 0.875rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .login-link {
+      margin-top: 1.25rem;
+    }
+  }
+
+  @media (max-height: 600px) {
+    .signup-container {
+      padding: 1rem;
+    }
+
+    h1 {
+      margin-bottom: 1rem;
+    }
+
+    .form-group {
+      margin-bottom: 1rem;
     }
   }
 

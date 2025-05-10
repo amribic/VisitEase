@@ -66,11 +66,16 @@
     box-sizing: border-box;
     background-color: #f5f5f5;
     overflow-x: hidden;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    min-height: 100vh;
+    width: 100%;
   }
 
-  :global(*), :global(*::before), :global(*::after) {
-    box-sizing: inherit;
+  :global(html) {
+    font-size: 16px;
+  }
+
+  :global(*) {
+    box-sizing: border-box;
   }
 
   main {
@@ -83,6 +88,7 @@
     align-items: center;
     box-sizing: border-box;
     width: 100%;
+    position: relative;
   }
 
   .container {
@@ -90,13 +96,22 @@
     max-width: 1200px;
     margin: 0 auto;
     padding: 0 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
   }
 
-  @media (max-width: 600px) {
+  @media (max-width: 480px) {
+    :global(html) {
+      font-size: 14px;
+    }
+
+    main {
+      padding: 0.5rem;
+    }
+
     .container {
-      max-width: 100vw;
-      width: 100vw;
-      padding: 0;
+      padding: 0 0.5rem;
     }
   }
 </style> 

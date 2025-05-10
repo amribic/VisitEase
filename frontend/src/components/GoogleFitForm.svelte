@@ -137,6 +137,7 @@
     max-width: 100%;
     width: 100%;
     margin: 0 auto;
+    position: relative;
     max-height: 100vh;
     overflow-y: auto;
   }
@@ -167,6 +168,7 @@
     color: #666;
     margin-bottom: 2rem;
     font-size: 1.1rem;
+    line-height: 1.5;
   }
 
   .buttons {
@@ -177,12 +179,14 @@
 
   button {
     width: 100%;
-    padding: 0.75rem;
+    padding: 0.875rem;
     border: none;
     border-radius: 4px;
     font-size: 1rem;
     cursor: pointer;
     transition: background-color 0.2s;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
   }
 
   .connect-button {
@@ -190,7 +194,7 @@
     color: white;
   }
 
-  .connect-button:hover:not(:disabled) {
+  .connect-button:hover:not(:disabled), .connect-button:active:not(:disabled) {
     background-color: #357abd;
   }
 
@@ -199,7 +203,7 @@
     color: #666;
   }
 
-  .skip-button:hover:not(:disabled) {
+  .skip-button:hover:not(:disabled), .skip-button:active:not(:disabled) {
     background-color: #e0e0e0;
   }
 
@@ -208,54 +212,85 @@
     color: white;
   }
 
-  .continue-button:hover:not(:disabled) {
+  .continue-button:hover:not(:disabled), .continue-button:active:not(:disabled) {
     background-color: #45a049;
   }
 
   button:disabled {
     background-color: #ccc;
     cursor: not-allowed;
+    opacity: 0.7;
   }
 
   .error-message {
     background-color: #ffebee;
     color: #c62828;
-    padding: 0.75rem;
+    padding: 0.875rem;
     border-radius: 4px;
     margin-bottom: 1.5rem;
     font-size: 0.9rem;
+    line-height: 1.4;
   }
 
   .success-message {
     background-color: #e8f5e9;
     color: #2e7d32;
-    padding: 0.75rem;
+    padding: 0.875rem;
     border-radius: 4px;
     margin-bottom: 1.5rem;
     font-size: 0.9rem;
+    line-height: 1.4;
   }
 
   @media (max-width: 480px) {
+    .form-container {
+      padding: 1.5rem;
+      margin: 0.5rem;
+      border-radius: 0;
+      box-shadow: none;
+      background: transparent;
+    }
+
+    h1 {
+      font-size: 1.75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    p {
+      font-size: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .buttons {
+      gap: 0.875rem;
+    }
+
+    button {
+      padding: 1rem;
+      font-size: 1rem;
+    }
+
+    .error-message, .success-message {
+      padding: 1rem;
+      margin-bottom: 1.25rem;
+    }
+  }
+
+  @media (max-height: 600px) {
     .form-container {
       padding: 1rem;
     }
 
     h1 {
-      font-size: 1.5rem;
+      margin-bottom: 1rem;
     }
 
-    button {
-      padding: 0.5rem;
+    p {
+      margin-bottom: 1rem;
     }
-  }
 
-  @media (max-width: 600px) {
-    .form-container {
-      width: 100vw;
-      max-width: 100vw;
-      border-radius: 0;
-      box-shadow: none;
-      padding: 0.5rem;
+    .buttons {
+      gap: 0.75rem;
     }
   }
 </style> 
