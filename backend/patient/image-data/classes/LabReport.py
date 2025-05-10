@@ -1,4 +1,4 @@
-class LabData:
+class LabReport:
     def __init__(self, unit: str, value: float, referenceRange: str, testName: str, filePath: str):
         self.unit = unit
         self.value = value
