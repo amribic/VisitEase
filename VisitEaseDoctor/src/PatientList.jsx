@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import './PatientList.css';
+import PatientDetail from './PatientDetail';
 
 const avatarColors = [
   '#F9D97A', // yellow
@@ -36,9 +37,14 @@ function getInitials(name) {
 
 function PatientList() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedPatient, setSelectedPatient] = useState(null);
   const filteredPatients = patients.filter(patient =>
     patient.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  if (selectedPatient) {
+    return <PatientDetail patient={selectedPatient} onBack={() => setSelectedPatient(null)} />;
+  }
 
   return (
     <div className="patient-app-bg">
@@ -70,7 +76,7 @@ function PatientList() {
             </thead>
             <tbody>
               {filteredPatients.map((patient, idx) => (
-                <tr key={patient.name}>
+                <tr key={patient.name} style={{ cursor: 'pointer' }} onClick={() => setSelectedPatient(patient)}>
                   <td>
                     <span className="patient-avatar-table" style={{ background: avatarColors[idx % avatarColors.length] }}>
                       {getInitials(patient.name)}
