@@ -8,6 +8,9 @@ import json
 import os
 from datetime import timedelta
 from flask_cors import CORS
+from PIL import Image
+import tempfile
+import io
 
 app = Flask(__name__)
 # Enable CORS for localhost development
@@ -22,7 +25,7 @@ app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 try:
     cred = credentials.Certificate('../../avi-cdtm-hack-team-1613-firebase-adminsdk-fbsvc-14ccd2ea46.json')
     firebase_admin.initialize_app(cred, {
-        'storageBucket': 'avi-cdtm-hack-team-1613.appspot.com'
+        'storageBucket': 'avi-cdtm-hack-team-1613.firebasestorage.app'
     })
 except ValueError:
     pass
@@ -122,7 +125,7 @@ def signup():
         try:
             # Get a reference to the default storage bucket associated with your project
             print('test')
-            bucket = storage.bucket(name='avi-cdtm-hack-team-1613.appspot.com')
+            bucket = storage.bucket(name='avi-cdtm-hack-team-1613.firebasestorage.app')
             print(f"Accessed bucket: {bucket.name}")
 
             # --- Create the "Folder" (by creating an empty object) ---
@@ -131,7 +134,7 @@ def signup():
             # makes the folder appear in the console.
 
             # Get a blob (object) reference with the desired "folder" name
-            blob = bucket.blob(f'users/{user.uid}/image-data')
+            blob = bucket.blob(f'users/{user.uid}/user-info')
 
             # Upload an empty string (or empty bytes) to create the object.
             # This is how you make the folder visible without putting a file inside yet.
@@ -258,6 +261,84 @@ def fitness():
     except Exception as e:
         app.logger.error(f"Error fetching fitness data: {e}")
         return jsonify({'error': str(e)}), 500
+
+@app.route('/upload-image', methods=['POST'])
+@login_required
+def upload_image(image_type: str, uuid: str):
+    file = request.files.get('image')
+    if file and file.filename.endswith(('.jpg', '.jpeg', '.png')):
+        user_id = current_user.id
+        bucket = storage.bucket(name='avi-cdtm-hack-team-1613.firebasestorage.app')
+        blob = bucket.blob(f'users/{user_id}/image-data/{image_type}/{uuid}/{file.filename}')
+        blob.upload_from_file(file, content_type=file.content_type)
+        return jsonify({'success': True, 'message': 'Image uploaded successfully'})
+    
+    return jsonify({'success': False, 'message': 'Invalid image format'}), 400
+
+def download_images_from_firebase(user_id, image_type, uuid):
+    bucket = storage.bucket(name='avi-cdtm-hack-team-1613.firebasestorage.app')
+    prefix = f'users/{user_id}/image-data/{image_type}/{uuid}/'
+    blobs = list(bucket.list_blobs(prefix=prefix))
+
+    image_files = []
+    for blob in sorted(blobs, key=lambda b: b.name):  # sort alphabetically
+        img_data = blob.download_as_bytes()
+        image_files.append(io.BytesIO(img_data))
+
+    return image_files
+
+
+def upload_pdf_to_firebase(local_pdf_path, user_id, pdf_type, uuid):
+    bucket = storage.bucket(name='avi-cdtm-hack-team-1613.firebasestorage.app')
+    filename = os.path.basename(local_pdf_path)
+    blob = bucket.blob(f'users/{user_id}/pdf-data/{pdf_type}/{uuid}/{filename}')
+    blob.upload_from_filename(local_pdf_path, content_type='application/pdf')
+    return blob.public_url
+
+def convert_images_to_pdf_and_upload(image_streams, user_id, pdf_type, uuid):
+    try:
+        images = []
+        for stream in image_streams:
+            img = Image.open(stream).convert('RGB')
+            images.append(img)
+
+        if not images:
+            raise ValueError("No images found")
+
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+            images[0].save(tmp.name, save_all=True, append_images=images[1:])
+            tmp_path = tmp.name
+
+        pdf_url = upload_pdf_to_firebase(tmp_path, user_id, pdf_type, uuid)
+        os.remove(tmp_path)
+
+        return pdf_url
+    except Exception as e:
+        print(f"Error converting/uploading PDF: {e}")
+        return None
+
+@app.route('/convert-images-to-pdf', methods=['POST'])
+@login_required
+def convert_images_to_pdf():
+    image_type = request.form.get('image_type')
+    pdf_type = request.form.get('pdf_type')
+    uuid = request.form.get('uuid')
+
+    if not image_type or not pdf_type or not uuid:
+        return jsonify({'success': False, 'message': 'Missing required fields'}), 400
+
+    user_id = current_user.id
+    image_streams = download_images_from_firebase(user_id, image_type, uuid)
+
+    if not image_streams:
+        return jsonify({'success': False, 'message': 'No images found in Firebase'}), 404
+
+    pdf_url = convert_images_to_pdf_and_upload(image_streams, user_id, pdf_type, uuid)
+    if pdf_url:
+        return jsonify({'success': True, 'pdf_url': pdf_url})
+    else:
+        return jsonify({'success': False, 'message': 'PDF generation failed'}), 500
+
 
 if __name__ == '__main__':
     app.run(port=8080, debug=True, use_reloader=False)
