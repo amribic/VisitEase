@@ -2,8 +2,7 @@ from flask import Flask, redirect, session, request, render_template_string, fla
 from healthapp.google_fit import get_flow, get_steps, get_heart_rate, get_calories, get_distance, save_fitness_data
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
-import firebase_admin
-from firebase_admin import credentials, auth, firestore
+from firebase_config import get_firestore_db, get_auth
 import json
 import os
 from datetime import timedelta
@@ -16,12 +15,8 @@ app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
 # Initialize Firebase
-try:
-    cred = credentials.Certificate('../../avi-cdtm-hack-team-1613-firebase-adminsdk-fbsvc-14ccd2ea46.json')
-    firebase_admin.initialize_app(cred)
-except ValueError:
-    pass
-db = firestore.client()
+db = get_firestore_db()
+auth = get_auth()
 
 # Initialize Flask-Login
 login_manager = LoginManager()

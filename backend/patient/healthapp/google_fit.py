@@ -2,7 +2,12 @@ import os
 from google_auth_oauthlib.flow import Flow
 import requests
 import datetime
-from firebase_config import db
+import sys
+from pathlib import Path
+
+# Add the parent directory to sys.path to allow importing firebase_config
+sys.path.append(str(Path(__file__).parent.parent.parent))
+from firebase_config import get_firestore_db
 from firebase_admin import firestore
 
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
@@ -10,6 +15,9 @@ os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 SCOPES = ['https://www.googleapis.com/auth/fitness.activity.read']
 REDIRECT_URI = 'http://localhost:8080/oauth2callback'
 CLIENT_SECRETS_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname((os.path.dirname(__file__))))), 'client_secret.json')
+
+# Initialize Firestore
+db = get_firestore_db()
 
 
 def get_flow():
