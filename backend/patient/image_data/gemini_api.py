@@ -328,7 +328,7 @@ def call_gemini_api(file_path: str, document_type: str):
   elif (document_type == "insuranceCard"):
      SCHEMA = SCHEMA_INSURANCE_CARD
   else:
-    raise ValueError("Invalid document type. Must be 'doctorLetter', 'medicationPlan', or 'labData'.")
+    raise ValueError("Invalid document type. Must be 'doctorLetter', 'medicationPlan', 'labData', or 'insuranceCard'.")
 
   PROMPT = f"""
     You are an expert medical document analysis tool. Your task is to analyze the provided PDF document and extract information.
@@ -377,7 +377,7 @@ def call_gemini_api(file_path: str, document_type: str):
   elif (document_type == 'insuranceCard'):
      return createInsuranceCard(json_obj, file_path).to_dict()
   else:
-    raise ValueError("Invalid document type. Must be 'doctorLetter', 'medicationPlan', or 'labData'.") 
+    raise ValueError("Invalid document type. Must be 'doctorLetter', 'medicationPlan', 'labData', or 'insuranceCard'.") 
 
 
 if __name__ == "__main__":

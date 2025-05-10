@@ -164,7 +164,7 @@
             const formData = new FormData();
             formData.append('image', files[i]);
 
-            const response = await fetch(`http://localhost:8080/upload-image?image_type=insurance-card&uuid=${insuranceUuid}`, {
+            const response = await fetch(`http://localhost:8080/upload-image?image_type=insuranceCard&uuid=${insuranceUuid}`, {
               method: 'POST',
               body: formData,
               credentials: 'include'
@@ -181,7 +181,7 @@
 
           // Call convert_images_to_pdf after successful upload
           const pdfForm = new FormData();
-          pdfForm.append('image_type', 'insurance-card');
+          pdfForm.append('image_type', 'insuranceCard');
           pdfForm.append('uuid', insuranceUuid);
           try {
             const pdfResponse = await fetch('http://localhost:8080/convert-images-to-pdf', {
