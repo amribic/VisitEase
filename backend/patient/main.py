@@ -100,7 +100,7 @@ def login():
 def signup():
     email = request.form.get('email')
     password = request.form.get('password')
-    
+    print('test2')
     try:
         user = auth.create_user(
             email=email,
@@ -118,10 +118,11 @@ def signup():
         session['user_id'] = user.uid
         session['email'] = email
         session.modified = True
-        
+        print('test1')
         try:
             # Get a reference to the default storage bucket associated with your project
-            bucket = storage.bucket()
+            print('test')
+            bucket = storage.bucket(name='avi-cdtm-hack-team-1613.appspot.com')
             print(f"Accessed bucket: {bucket.name}")
 
             # --- Create the "Folder" (by creating an empty object) ---
