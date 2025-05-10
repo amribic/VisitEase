@@ -206,8 +206,19 @@ def oauth2callback():
         session['access_token'] = creds.token
         session.modified = True
         
-        # Redirect back to frontend with success status
-        return redirect('http://localhost:5173/google-fit-success')
+        # Fetch and store fitness data
+        try:
+            steps = get_steps(creds.token)
+            heart_rate = get_heart_rate(creds.token)
+            calories = get_calories(creds.token)
+            distance = get_distance(creds.token) / 1000
+            
+            save_fitness_data(user_id, steps, heart_rate, calories, distance)
+        except Exception as e:
+            app.logger.error(f"Error fetching fitness data: {e}")
+        
+        # Redirect back to the same page with success parameter
+        return redirect('http://localhost:5173/google-fit?success=true')
     except Exception as e:
         app.logger.error(f"Error in callback: {e}")
         return redirect('http://localhost:5173/login')
@@ -216,52 +227,36 @@ def oauth2callback():
 @login_required
 def fitness():
     if not current_user.is_authenticated:
-        return redirect(url_for('login'))
+        return jsonify({'error': 'Not authenticated'}), 401
         
     access_token = session.get('access_token')
     if not access_token:
-        return render_template_string('''
-            <h1>Connect to Google Fit</h1>
-            <p>You need to connect your Google Fit account to view your fitness data.</p>
-            <p><a href="{{ url_for('authorize') }}" class="button">Connect Google Fit</a></p>
-            <p><a href="{{ url_for('index') }}">Back to Home</a></p>
-            <style>
-                .button {
-                    display: inline-block;
-                    padding: 10px 20px;
-                    background-color: #4285f4;
-                    color: white;
-                    text-decoration: none;
-                    border-radius: 5px;
-                    margin: 10px 0;
-                }
-                .button:hover {
-                    background-color: #357abd;
-                }
-            </style>
-        ''')
+        return jsonify({'error': 'Not connected to Google Fit'}), 401
 
-    steps = get_steps(access_token)
-    heart_rate = get_heart_rate(access_token)
-    calories = get_calories(access_token)
-    distance = get_distance(access_token) / 1000
+    try:
+        steps = get_steps(access_token)
+        heart_rate = get_heart_rate(access_token)
+        calories = get_calories(access_token)
+        distance = get_distance(access_token) / 1000
 
-    save_fitness_data(current_user.id, steps, heart_rate, calories, distance)
+        save_fitness_data(current_user.id, steps, heart_rate, calories, distance)
 
-    return render_template_string('''
-        <h1>Your Fitness Data (Last 24 Hours)</h1>
-        <p>Steps: {{ steps }}</p>
-        <p>Heart Rate:</p>
-        <ul>
-            <li>Average: {{ "%.1f"|format(heart_rate.average) }} BPM</li>
-            <li>Minimum: {{ "%.1f"|format(heart_rate.min) }} BPM</li>
-            <li>Maximum: {{ "%.1f"|format(heart_rate.max) }} BPM</li>
-        </ul>
-        <p>Calories Burned: {{ "%.1f"|format(calories) }} kcal</p>
-        <p>Distance: {{ "%.2f"|format(distance) }} km</p>
-        <p><a href="{{ url_for('index') }}">Back to Home</a></p>
-        <p><a href="{{ url_for('authorize') }}">Refresh Data</a></p>
-    ''', steps=steps, heart_rate=heart_rate, calories=calories, distance=distance)
+        return jsonify({
+            'connected': True,
+            'data': {
+                'steps': steps,
+                'heart_rate': {
+                    'average': heart_rate.average,
+                    'min': heart_rate.min,
+                    'max': heart_rate.max
+                },
+                'calories': calories,
+                'distance': distance
+            }
+        })
+    except Exception as e:
+        app.logger.error(f"Error fetching fitness data: {e}")
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(port=8080, debug=True, use_reloader=False)

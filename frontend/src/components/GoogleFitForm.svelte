@@ -5,21 +5,28 @@
   let isConnected = false;
   let isLoading = false;
   let error = '';
+  let successMessage = '';
 
   onMount(async () => {
     // Check if we're coming back from Google Fit auth
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('success') === 'true') {
       isConnected = true;
+      successMessage = 'Successfully connected to Google Fit! Your data has been imported.';
+      // Remove the success parameter from the URL
+      window.history.replaceState({}, '', '/google-fit');
     } else {
       // Check if already connected
       try {
         const response = await fetch('http://localhost:8080/fitness', {
-          credentials: 'include'
+          credentials: 'include',
+          method: 'HEAD'
         });
         isConnected = response.ok;
+        console.log('Google Fit connection status:', isConnected);
       } catch (e) {
         console.error('Error checking Google Fit connection:', e);
+        isConnected = false;
       }
     }
   });
@@ -27,6 +34,7 @@
   async function connectGoogleFit() {
     isLoading = true;
     error = '';
+    successMessage = '';
     
     try {
       const response = await fetch('http://localhost:8080/authorize', {
@@ -35,14 +43,20 @@
       
       if (response.ok) {
         const data = await response.json();
+        console.log('Authorization response:', data);
         if (data.url) {
           window.location.href = data.url;
+        } else {
+          error = 'No authorization URL received';
         }
       } else {
-        error = 'Failed to connect to Google Fit. Please try again.';
+        const errorData = await response.json();
+        error = errorData.error || 'Failed to connect to Google Fit. Please try again.';
+        console.error('Authorization error:', error);
       }
     } catch (e) {
       error = 'An error occurred. Please try again.';
+      console.error('Connection error:', e);
     } finally {
       isLoading = false;
     }
@@ -63,6 +77,12 @@
   {#if error}
     <div class="error-message">
       {error}
+    </div>
+  {/if}
+
+  {#if successMessage}
+    <div class="success-message">
+      {successMessage}
     </div>
   {/if}
 
@@ -185,6 +205,15 @@
   .error-message {
     background-color: #ffebee;
     color: #c62828;
+    padding: 0.75rem;
+    border-radius: 4px;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+  }
+
+  .success-message {
+    background-color: #e8f5e9;
+    color: #2e7d32;
     padding: 0.75rem;
     border-radius: 4px;
     margin-bottom: 1.5rem;
