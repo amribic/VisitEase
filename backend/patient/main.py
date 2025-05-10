@@ -25,7 +25,7 @@ conversations_lock = Lock()
 
 app = Flask(__name__)
 # Enable CORS for localhost development
-CORS(app, supports_credentials=True, origins=['http://localhost:5173'])
+CORS(app, supports_credentials=True, origins=['http://localhost:5173', 'http://localhost:3000'])
 app.secret_key = 'your_secret_key'  # Change this to a secure secret key in production
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
 app.config['SESSION_COOKIE_SECURE'] = False
@@ -34,7 +34,10 @@ app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
 # Initialize Firebase
 try:
-    cred = credentials.Certificate('../../avi-cdtm-hack-team-1613-firebase-adminsdk-fbsvc-14ccd2ea46.json')
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.abspath(os.path.join(current_dir, '../..'))
+    cred_path = os.path.join(project_root, 'avi-cdtm-hack-team-1613-firebase-adminsdk-fbsvc-14ccd2ea46.json')
+    cred = credentials.Certificate(cred_path)
     firebase_admin.initialize_app(cred, {
         'storageBucket': 'avi-cdtm-hack-team-1613.firebasestorage.app'
     })
@@ -598,10 +601,9 @@ def get_user_type_pdf():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route('/get-user-ids', method=["GET"])
+@app.route('/get-user-ids', methods=["GET"])
 def get_user_ids():
     user_docs = db.collection('users').stream()
-
     return [doc.id for doc in user_docs]
 
 if __name__ == '__main__':

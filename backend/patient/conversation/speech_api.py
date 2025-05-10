@@ -276,7 +276,7 @@ SCHEMA_CONVERSATION = {
 
 # Initialize Firebase
 try:
-    cred = credentials.Certificate('../../../avi-cdtm-hack-team-1613-firebase-adminsdk-fbsvc-14ccd2ea46.json')
+    cred = credentials.Certificate('../../avi-cdtm-hack-team-1613-firebase-adminsdk-fbsvc-14ccd2ea46.json')
     firebase_admin.initialize_app(cred, {
         'storageBucket': 'avi-cdtm-hack-team-1613.firebasestorage.app'
     })

@@ -20,27 +20,9 @@ function DownloadIcon() {
 }
 
 function PatientDetail({ patient, onBack }) {
-  // Sample data for demonstration (replace with real patient data as needed)
-  const data = {
-    name: patient?.name || 'Mr. Krüger, Nils',
-    time: 'Today, 11:26 AM',
-    pain: {
-      location: ['Forehead, temples and/or neck'],
-      duration: ['Several times a week', 'For a few weeks'],
-      trigger: ['Stress or psychological strain', 'Sleep problems'],
-    },
-    other: ['Patient already knows these pains'],
-    pdfs: [
-      { name: 'Lab Results.pdf', url: '#' },
-      { name: 'Prescription.pdf', url: '#' },
-      { name: 'Discharge Summary.pdf', url: '#' },
-    ],
-    reportUrl: '#',
-  };
-
-  function Pill({ children }) {
-    return <span className="patient-detail-pill">{children}</span>;
-  }
+  const [userData, setUserData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // ChatGPT-like interface state
   const [messages, setMessages] = useState([
@@ -48,6 +30,27 @@ function PatientDetail({ patient, onBack }) {
   ]);
   const [input, setInput] = useState('');
   const chatEndRef = useRef(null);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const response = await fetch('http://localhost:8080/get-structured-data', {
+          credentials: 'include'
+        });
+        if (!response.ok) {
+          throw new Error('Failed to fetch user data');
+        }
+        const data = await response.json();
+        setUserData(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, []);
 
   // Scroll to top on mount
   useEffect(() => {
@@ -71,13 +74,49 @@ function PatientDetail({ patient, onBack }) {
     setInput('');
   }
 
+  function Pill({ children }) {
+    return <span className="patient-detail-pill">{children}</span>;
+  }
+
+  if (loading) {
+    return <div className="patient-detail-bg">Loading...</div>;
+  }
+
+  if (error) {
+    return <div className="patient-detail-bg">Error: {error}</div>;
+  }
+
+  // Extract data from userData
+  const doctorLetter = userData?.doctorLetter || {};
+  const labData = userData?.labData || [];
+  const medicationPlan = userData?.medicationPlan || {};
+  const insuranceCard = userData?.insuranceCard || {};
+
+  // Prepare data for display
+  const displayData = {
+    name: insuranceCard.name || patient?.name || 'Unknown Patient',
+    time: new Date().toLocaleString(),
+    pain: {
+      location: doctorLetter.clinicalFindings || [],
+      duration: doctorLetter.anamnesis || [],
+      trigger: doctorLetter.assessment || [],
+    },
+    other: doctorLetter.plan || [],
+    pdfs: [
+      { name: 'Lab Results.pdf', url: '#' },
+      { name: 'Prescription.pdf', url: '#' },
+      { name: 'Discharge Summary.pdf', url: '#' },
+    ],
+    reportUrl: '#',
+  };
+
   return (
     <div className="patient-detail-bg">
       {/* Back button */}
       <button onClick={onBack} style={{ position: 'absolute', top: 32, left: 32, background: 'none', border: 'none', color: '#2b4c4c', fontSize: '1.2rem', fontWeight: 600, cursor: 'pointer', zIndex: 20 }}>&larr; Back</button>
       {/* Download Report button */}
       <a
-        href={data.reportUrl}
+        href={displayData.reportUrl}
         download="Patient_Report.pdf"
         style={{
           position: 'absolute',
@@ -105,23 +144,23 @@ function PatientDetail({ patient, onBack }) {
       </a>
       <div className="patient-detail-main">
         <div className="patient-detail-section-title">Medical History</div>
-        <div className="patient-detail-name">{data.name}</div>
-        <div className="patient-detail-time">{data.time}</div>
+        <div className="patient-detail-name">{displayData.name}</div>
+        <div className="patient-detail-time">{displayData.time}</div>
         <div className="patient-detail-grid">
           {/* Left: Pill containers */}
           <div className="patient-detail-left">
             <div className="patient-detail-card">
-              <div className="patient-detail-card-title patient-detail-card-title-lg">Pain</div>
+              <div className="patient-detail-card-title patient-detail-card-title-lg">Clinical Findings</div>
               <div style={{ fontWeight: 600, marginBottom: 4 }}>Location</div>
-              <div style={{ marginBottom: 12 }}>{data.pain.location.map((x, i) => <Pill key={i}>{x}</Pill>)}</div>
-              <div style={{ fontWeight: 600, marginBottom: 4 }}>Duration</div>
-              <div style={{ marginBottom: 12 }}>{data.pain.duration.map((x, i) => <Pill key={i}>{x}</Pill>)}</div>
-              <div style={{ fontWeight: 600, marginBottom: 4 }}>Suspected Trigger</div>
-              <div>{data.pain.trigger.map((x, i) => <Pill key={i}>{x}</Pill>)}</div>
+              <div style={{ marginBottom: 12 }}>{displayData.pain.location.map((x, i) => <Pill key={i}>{x}</Pill>)}</div>
+              <div style={{ fontWeight: 600, marginBottom: 4 }}>Anamnesis</div>
+              <div style={{ marginBottom: 12 }}>{displayData.pain.duration.map((x, i) => <Pill key={i}>{x}</Pill>)}</div>
+              <div style={{ fontWeight: 600, marginBottom: 4 }}>Assessment</div>
+              <div>{displayData.pain.trigger.map((x, i) => <Pill key={i}>{x}</Pill>)}</div>
             </div>
             <div className="patient-detail-card">
-              <div className="patient-detail-card-title">Other</div>
-              {data.other.map((x, i) => <Pill key={i}>{x}</Pill>)}
+              <div className="patient-detail-card-title">Treatment Plan</div>
+              {displayData.other.map((x, i) => <Pill key={i}>{x}</Pill>)}
             </div>
           </div>
           {/* Right: Chat */}
@@ -151,22 +190,27 @@ function PatientDetail({ patient, onBack }) {
           {/* Bottom: Full-width row of cards */}
           <div className="patient-detail-bottom-row">
             <div className="patient-detail-card" style={{ minWidth: 220, flex: 1, margin: 0 }}>
-              <div className="patient-detail-card-title">Previous Treatment</div>
-              <Pill>Painkillers</Pill>
+              <div className="patient-detail-card-title">Medication Plan</div>
+              {medicationPlan.medication?.map((med, i) => (
+                <Pill key={i}>{med.medicationName} - {med.dosage}</Pill>
+              ))}
             </div>
             <div className="patient-detail-card" style={{ minWidth: 220, flex: 1, margin: 0 }}>
-              <div className="patient-detail-card-title">Sick Note Requested</div>
-              <Pill>Yes</Pill>
+              <div className="patient-detail-card-title">Lab Results</div>
+              {labData.map((lab, i) => (
+                <Pill key={i}>{lab.testName}: {lab.value} {lab.unit}</Pill>
+              ))}
             </div>
             <div className="patient-detail-card" style={{ minWidth: 220, flex: 1, margin: 0 }}>
-              <div className="patient-detail-card-title">Additional Complaints</div>
-              <Pill>Nausea</Pill>
+              <div className="patient-detail-card-title">Insurance Info</div>
+              <Pill>Provider: {insuranceCard.insuranceProvider}</Pill>
+              <Pill>Number: {insuranceCard.insuranceNumber}</Pill>
             </div>
           </div>
         </div>
         {/* PDF container */}
         <div className="patient-detail-pdf-container">
-          {data.pdfs.map((pdf, i) => (
+          {displayData.pdfs.map((pdf, i) => (
             <div
               key={pdf.name}
               className="patient-detail-pdf-entry"
