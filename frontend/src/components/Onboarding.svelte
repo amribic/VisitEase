@@ -25,8 +25,11 @@
     let labReportSuccess = '';
     let doctorLetterSuccess = '';
     let medicalInfoSuccess = '';
+    let insuranceError = '';
+    let insuranceSuccess = '';
 
     // Generate UUIDs for each upload type
+    let insuranceUuid = uuidv4();
     let labReportUuid = uuidv4();
     let doctorLetterUuid = uuidv4();
     let medicalInfoUuid = uuidv4();
@@ -34,6 +37,9 @@
     // Reset UUIDs when moving to a new step
     function resetUuid(stepType) {
       switch(stepType) {
+        case 'insurance':
+          insuranceUuid = uuidv4();
+          break;
         case 'labReport':
           labReportUuid = uuidv4();
           break;
@@ -146,6 +152,59 @@
       }
     }
 
+    async function handleInsuranceUpload(event) {
+      const file = event.currentTarget.files?.[0];
+      if (file) {
+        uploading = true;
+        insuranceError = '';
+        insuranceSuccess = '';
+
+        const formData = new FormData();
+        formData.append('image', file);
+
+        try {
+          const response = await fetch(`http://localhost:8080/upload-image?image_type=insurance-card&uuid=${insuranceUuid}`, {
+            method: 'POST',
+            body: formData,
+            credentials: 'include'
+          });
+          const data = await response.json();
+          
+          if (data.success) {
+            insuranceConnected = true;
+            insuranceSuccess = 'Insurance card uploaded successfully!';
+
+            // Call convert_images_to_pdf after successful upload
+            const pdfForm = new FormData();
+            pdfForm.append('image_type', 'insurance-card');
+            pdfForm.append('uuid', insuranceUuid);
+            try {
+              const pdfResponse = await fetch('http://localhost:8080/convert-images-to-pdf', {
+                method: 'POST',
+                body: pdfForm,
+                credentials: 'include'
+              });
+              const pdfData = await pdfResponse.json();
+              if (pdfData.success) {
+                console.log('Insurance PDF generated:', pdfData.pdf_url);
+              } else {
+                console.error('Insurance PDF generation failed:', pdfData.message);
+              }
+            } catch (pdfError) {
+              console.error('Error calling convert_images_to_pdf for insurance:', pdfError);
+            }
+          } else {
+            insuranceError = data.message || 'Upload failed';
+          }
+        } catch (error) {
+          console.error('Insurance upload error:', error);
+          insuranceError = 'Failed to upload insurance card. Please try again.';
+        } finally {
+          uploading = false;
+        }
+      }
+    }
+
     async function handleLabReportUpload(event) {
       const file = event.currentTarget.files?.[0];
       if (file) {
@@ -171,7 +230,9 @@
       if (currentStep < steps.length - 1) {
         // If next step is an upload step, generate a new UUID for it
         const nextType = steps[currentStep + 1].type;
-        if (nextType === 'labReport') {
+        if (nextType === 'insurance') {
+          insuranceUuid = uuidv4();
+        } else if (nextType === 'labReport') {
           labReportUuid = uuidv4();
         } else if (nextType === 'doctorLetter') {
           doctorLetterUuid = uuidv4();
@@ -186,7 +247,9 @@
       if (currentStep < steps.length - 1) {
         // If next step is an upload step, generate a new UUID for it
         const nextType = steps[currentStep + 1].type;
-        if (nextType === 'labReport') {
+        if (nextType === 'insurance') {
+          insuranceUuid = uuidv4();
+        } else if (nextType === 'labReport') {
           labReportUuid = uuidv4();
         } else if (nextType === 'doctorLetter') {
           doctorLetterUuid = uuidv4();
@@ -229,11 +292,18 @@
         {#if steps[currentStep].type === 'insurance'}
           <div class="square-placeholder">
             {#if insuranceConnected}
-              <div>Insurance Connected!</div>
+              <div>Insurance Card Uploaded!</div>
             {:else}
-              <button class="action-btn" on:click={handleInsuranceConnect} disabled={uploading}>
-                {uploading ? 'Connecting...' : 'Connect Insurance'}
-              </button>
+              <label class="file-upload">
+                <input type="file" accept="image/*" on:change={handleInsuranceUpload} disabled={uploading} />
+                <span>{uploading ? 'Uploading...' : 'Upload Insurance Card'}</span>
+              </label>
+              {#if insuranceError}
+                <div class="error-message">{insuranceError}</div>
+              {/if}
+              {#if insuranceSuccess}
+                <div class="success-message">{insuranceSuccess}</div>
+              {/if}
             {/if}
           </div>
         {:else if steps[currentStep].type === 'labReport'}
