@@ -290,14 +290,13 @@ def download_images_from_firebase(user_id, image_type, uuid):
     return image_files
 
 
-def upload_pdf_to_firebase(local_pdf_path, user_id, pdf_type, uuid):
+def upload_pdf_to_firebase(local_pdf_path, user_id, file_type, uuid):
     bucket = storage.bucket(name='avi-cdtm-hack-team-1613.firebasestorage.app')
-    filename = os.path.basename(local_pdf_path)
-    blob = bucket.blob(f'users/{user_id}/pdf-data/{pdf_type}/{uuid}/{filename}')
+    blob = bucket.blob(f'users/{user_id}/pdf-data/{file_type}/{uuid}.pdf')
     blob.upload_from_filename(local_pdf_path, content_type='application/pdf')
     return blob.public_url
 
-def convert_images_to_pdf_and_upload(image_streams, user_id, pdf_type, uuid):
+def convert_images_to_pdf_and_upload(image_streams, user_id, image_type, uuid):
     try:
         images = []
         for stream in image_streams:
@@ -311,7 +310,7 @@ def convert_images_to_pdf_and_upload(image_streams, user_id, pdf_type, uuid):
             images[0].save(tmp.name, save_all=True, append_images=images[1:])
             tmp_path = tmp.name
 
-        pdf_url = upload_pdf_to_firebase(tmp_path, user_id, pdf_type, uuid)
+        pdf_url = upload_pdf_to_firebase(tmp_path, user_id, image_type, uuid)
         os.remove(tmp_path)
 
         return pdf_url
@@ -323,19 +322,20 @@ def convert_images_to_pdf_and_upload(image_streams, user_id, pdf_type, uuid):
 @login_required
 def convert_images_to_pdf():
     image_type = request.form.get('image_type')
-    pdf_type = request.form.get('pdf_type')
     uuid = request.form.get('uuid')
-
-    if not image_type or not pdf_type or not uuid:
+    print(image_type, uuid)
+    if not image_type or not uuid:
         return jsonify({'success': False, 'message': 'Missing required fields'}), 400
 
     user_id = current_user.id
+    print(user_id)
     image_streams = download_images_from_firebase(user_id, image_type, uuid)
 
     if not image_streams:
         return jsonify({'success': False, 'message': 'No images found in Firebase'}), 404
 
-    pdf_url = convert_images_to_pdf_and_upload(image_streams, user_id, pdf_type, uuid)
+    pdf_url = convert_images_to_pdf_and_upload(image_streams, user_id, image_type, uuid)
+    print(pdf_url)
     if pdf_url:
         return jsonify({'success': True, 'pdf_url': pdf_url})
     else:

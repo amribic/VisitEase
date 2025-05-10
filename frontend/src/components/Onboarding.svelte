@@ -73,7 +73,6 @@
       const formData = new FormData();
       formData.append('image', file);
 
-      // Determine the correct uuid for the upload type
       let uuid = '';
       if (type === 'lab-report') uuid = labReportUuid;
       else if (type === 'doctor-letter') uuid = doctorLetterUuid;
@@ -103,6 +102,26 @@
           } else if (type === 'medical-information') {
             medicalInfoUploaded = true;
             medicalInfoSuccess = 'File uploaded successfully!';
+          }
+
+          // Call convert_images_to_pdf after successful upload
+          const pdfForm = new FormData();
+          pdfForm.append('image_type', type);
+          pdfForm.append('uuid', uuid);
+          try {
+            const pdfResponse = await fetch('http://localhost:8080/convert-images-to-pdf', {
+              method: 'POST',
+              body: pdfForm,
+              credentials: 'include'
+            });
+            const pdfData = await pdfResponse.json();
+            if (pdfData.success) {
+              console.log('PDF generated:', pdfData.pdf_url);
+            } else {
+              console.error('PDF generation failed:', pdfData.message);
+            }
+          } catch (pdfError) {
+            console.error('Error calling convert_images_to_pdf:', pdfError);
           }
         } else {
           if (type === 'lab-report') {
