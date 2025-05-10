@@ -299,6 +299,7 @@ def upload_pdf_to_firebase(local_pdf_path, user_id, file_type, uuid):
 
 def convert_images_to_pdf_and_upload(image_streams, user_id, image_type, uuid):
     try:
+        # First, combine all images into a single PDF
         images = []
         for stream in image_streams:
             img = Image.open(stream).convert('RGB')
@@ -307,18 +308,28 @@ def convert_images_to_pdf_and_upload(image_streams, user_id, image_type, uuid):
         if not images:
             raise ValueError("No images found")
 
+        # Create a temporary PDF with all images
         with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
             images[0].save(tmp.name, save_all=True, append_images=images[1:])
             tmp_path = tmp.name
 
         print(f"Image type: {image_type}")
+        
+        # Make a single Gemini API call with the combined PDF
         data = call_gemini_api(tmp_path, image_type)
+        
+        # Format the data based on type
         if (image_type == "labData" or image_type == "medicationPlan"):
             data = {image_type: data}
+            
+        # Save the data to Firestore
         print(f"Got the data: \n{data}")
         db.collection('users').document(user_id).collection(image_type).document(uuid).set(data)
 
+        # Upload the combined PDF to Firebase
         pdf_url = upload_pdf_to_firebase(tmp_path, user_id, image_type, uuid)
+        
+        # Clean up the temporary file
         os.remove(tmp_path)
 
         return pdf_url
@@ -337,11 +348,13 @@ def convert_images_to_pdf():
 
     user_id = current_user.id
     print(user_id)
+    
+    # Download all images for this upload
     image_streams = download_images_from_firebase(user_id, image_type, uuid)
-
     if not image_streams:
         return jsonify({'success': False, 'message': 'No images found in Firebase'}), 404
 
+    # Process all images at once
     pdf_url = convert_images_to_pdf_and_upload(image_streams, user_id, image_type, uuid)
     
     if pdf_url:

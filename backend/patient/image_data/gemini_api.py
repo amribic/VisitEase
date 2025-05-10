@@ -365,15 +365,25 @@ def call_gemini_api(file_path: str, document_type: str):
   json_reponse = responses[1]
 
   json_obj = json.loads(json_reponse)
-  """ with open("/home/jonasbiermann/VisitEase/backend/patient/image-data/model-output/model-output-1.json", "w") as json_file:
-      json.dump(json_obj, json_file, indent=4, ensure_ascii=False) """
+  print("Gemini API Response:", json.dumps(json_obj, indent=2))  # Debug log
 
   if (document_type == "doctorLetter"):
     return createDoctorLetter(json_obj, file_path).to_dict()
   elif (document_type == "medicationPlan"):
      return [medicationPlan.to_dict() for medicationPlan in createMedicationPlan(json_obj["medication"], file_path)]
   elif (document_type == "labData"):
-    return [labData.to_dict() for labData in createLabData(json_obj["labData"], file_path)]
+    try:
+      print("Lab Data Response Structure:", json.dumps(json_obj, indent=2))
+      # For lab data, we need to access the labData array from the response
+      lab_data = json_obj["labData"]
+      print("Lab Data Array:", json.dumps(lab_data, indent=2))
+      return [labData.to_dict() for labData in createLabData(lab_data, file_path)]
+    except Exception as e:
+      print(f"Error processing lab data: {e}")
+      print(f"Full response structure: {json.dumps(json_obj, indent=2)}")
+      print(f"Error type: {type(e)}")
+      print(f"Error details: {str(e)}")
+      raise
   elif (document_type == 'insuranceCard'):
      return createInsuranceCard(json_obj, file_path).to_dict()
   else:

@@ -160,6 +160,7 @@
         insuranceSuccess = '';
 
         try {
+          // First upload all files
           for (let i = 0; i < files.length; i++) {
             const formData = new FormData();
             formData.append('image', files[i]);
@@ -176,31 +177,28 @@
             }
           }
           
-          insuranceConnected = true;
-          insuranceSuccess = `${files.length} file(s) uploaded successfully!`;
-
-          // Call convert_images_to_pdf after successful upload
+          // After all files are uploaded, trigger PDF conversion
           const pdfForm = new FormData();
           pdfForm.append('image_type', 'insuranceCard');
           pdfForm.append('uuid', insuranceUuid);
-          try {
-            const pdfResponse = await fetch('http://localhost:8080/convert-images-to-pdf', {
-              method: 'POST',
-              body: pdfForm,
-              credentials: 'include'
-            });
-            const pdfData = await pdfResponse.json();
-            if (pdfData.success) {
-              console.log('Insurance PDF generated:', pdfData.pdf_url);
-            } else {
-              console.error('Insurance PDF generation failed:', pdfData.message);
-            }
-          } catch (pdfError) {
-            console.error('Error calling convert_images_to_pdf for insurance:', pdfError);
+          
+          const pdfResponse = await fetch('http://localhost:8080/convert-images-to-pdf', {
+            method: 'POST',
+            body: pdfForm,
+            credentials: 'include'
+          });
+          const pdfData = await pdfResponse.json();
+          
+          if (pdfData.success) {
+            insuranceConnected = true;
+            insuranceSuccess = `${files.length} file(s) uploaded and processed successfully!`;
+            console.log('Insurance PDF generated:', pdfData.pdf_url);
+          } else {
+            throw new Error(pdfData.message || 'PDF generation failed');
           }
         } catch (error) {
           console.error('Insurance upload error:', error);
-          insuranceError = 'Failed to upload one or more files. Please try again.';
+          insuranceError = 'Failed to process files. Please try again.';
         } finally {
           uploading = false;
         }
@@ -215,14 +213,45 @@
         labReportSuccess = '';
         
         try {
+          // First upload all files
           for (let i = 0; i < files.length; i++) {
-            await handleFileUpload(files[i], 'labData');
+            const formData = new FormData();
+            formData.append('image', files[i]);
+            
+            const response = await fetch(`http://localhost:8080/upload-image?image_type=labData&uuid=${labReportUuid}`, {
+              method: 'POST',
+              body: formData,
+              credentials: 'include'
+            });
+            
+            const data = await response.json();
+            if (!data.success) {
+              throw new Error('Failed to upload one or more files');
+            }
           }
-          labReportUploaded = true;
-          labReportSuccess = `${files.length} file(s) uploaded successfully!`;
+          
+          // After all files are uploaded, trigger single PDF conversion and Gemini API call
+          const pdfForm = new FormData();
+          pdfForm.append('image_type', 'labData');
+          pdfForm.append('uuid', labReportUuid);
+          
+          const pdfResponse = await fetch('http://localhost:8080/convert-images-to-pdf', {
+            method: 'POST',
+            body: pdfForm,
+            credentials: 'include'
+          });
+          const pdfData = await pdfResponse.json();
+          
+          if (pdfData.success) {
+            labReportUploaded = true;
+            labReportSuccess = `${files.length} file(s) uploaded and processed successfully!`;
+            console.log('Lab report PDF generated:', pdfData.pdf_url);
+          } else {
+            throw new Error(pdfData.message || 'PDF generation failed');
+          }
         } catch (error) {
           console.error('Lab report upload error:', error);
-          labReportError = 'Failed to upload one or more files. Please try again.';
+          labReportError = 'Failed to process files. Please try again.';
         } finally {
           uploading = false;
         }
@@ -237,14 +266,45 @@
         doctorLetterSuccess = '';
         
         try {
+          // First upload all files
           for (let i = 0; i < files.length; i++) {
-            await handleFileUpload(files[i], 'doctorLetter');
+            const formData = new FormData();
+            formData.append('image', files[i]);
+            
+            const response = await fetch(`http://localhost:8080/upload-image?image_type=doctorLetter&uuid=${doctorLetterUuid}`, {
+              method: 'POST',
+              body: formData,
+              credentials: 'include'
+            });
+            
+            const data = await response.json();
+            if (!data.success) {
+              throw new Error('Failed to upload one or more files');
+            }
           }
-          doctorLetterUploaded = true;
-          doctorLetterSuccess = `${files.length} file(s) uploaded successfully!`;
+          
+          // After all files are uploaded, trigger single PDF conversion and Gemini API call
+          const pdfForm = new FormData();
+          pdfForm.append('image_type', 'doctorLetter');
+          pdfForm.append('uuid', doctorLetterUuid);
+          
+          const pdfResponse = await fetch('http://localhost:8080/convert-images-to-pdf', {
+            method: 'POST',
+            body: pdfForm,
+            credentials: 'include'
+          });
+          const pdfData = await pdfResponse.json();
+          
+          if (pdfData.success) {
+            doctorLetterUploaded = true;
+            doctorLetterSuccess = `${files.length} file(s) uploaded and processed successfully!`;
+            console.log('Doctor letter PDF generated:', pdfData.pdf_url);
+          } else {
+            throw new Error(pdfData.message || 'PDF generation failed');
+          }
         } catch (error) {
           console.error('Doctor letter upload error:', error);
-          doctorLetterError = 'Failed to upload one or more files. Please try again.';
+          doctorLetterError = 'Failed to process files. Please try again.';
         } finally {
           uploading = false;
         }
@@ -259,14 +319,45 @@
         medicalInfoSuccess = '';
         
         try {
+          // First upload all files
           for (let i = 0; i < files.length; i++) {
-            await handleFileUpload(files[i], 'medicationPlan');
+            const formData = new FormData();
+            formData.append('image', files[i]);
+            
+            const response = await fetch(`http://localhost:8080/upload-image?image_type=medicationPlan&uuid=${medicalInfoUuid}`, {
+              method: 'POST',
+              body: formData,
+              credentials: 'include'
+            });
+            
+            const data = await response.json();
+            if (!data.success) {
+              throw new Error('Failed to upload one or more files');
+            }
           }
-          medicalInfoUploaded = true;
-          medicalInfoSuccess = `${files.length} file(s) uploaded successfully!`;
+          
+          // After all files are uploaded, trigger single PDF conversion and Gemini API call
+          const pdfForm = new FormData();
+          pdfForm.append('image_type', 'medicationPlan');
+          pdfForm.append('uuid', medicalInfoUuid);
+          
+          const pdfResponse = await fetch('http://localhost:8080/convert-images-to-pdf', {
+            method: 'POST',
+            body: pdfForm,
+            credentials: 'include'
+          });
+          const pdfData = await pdfResponse.json();
+          
+          if (pdfData.success) {
+            medicalInfoUploaded = true;
+            medicalInfoSuccess = `${files.length} file(s) uploaded and processed successfully!`;
+            console.log('Medical info PDF generated:', pdfData.pdf_url);
+          } else {
+            throw new Error(pdfData.message || 'PDF generation failed');
+          }
         } catch (error) {
           console.error('Medical info upload error:', error);
-          medicalInfoError = 'Failed to upload one or more files. Please try again.';
+          medicalInfoError = 'Failed to process files. Please try again.';
         } finally {
           uploading = false;
         }
