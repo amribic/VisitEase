@@ -562,13 +562,11 @@ def conversation_turn():
         return response
 
 @app.route('/get-structured-data', methods=["GET"])
-@login_required
 def get_structured_data():
     user_id = request.args.get('user_id')
     return model_user_data(user_id)
 
 @app.route('/get-pdf-by-type-for-user', methods=["GET"])
-@login_required
 def get_user_type_pdf():
     user_id = request.args.get('user_id')
     file_type = request.args.get('file_type')
@@ -599,6 +597,12 @@ def get_user_type_pdf():
     
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@app.route('/get-user-ids', method=["GET"])
+def get_user_ids():
+    user_docs = db.collection('users').stream()
+
+    return [doc.id for doc in user_docs]
 
 if __name__ == '__main__':
     app.run(port=8080, debug=True, use_reloader=False)
