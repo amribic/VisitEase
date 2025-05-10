@@ -19,6 +19,8 @@
     "vite": "^5.0.0"
   },
   "dependencies": {
-    "@sveltejs/kit": "^2.20.8"
+    "@sveltejs/kit": "^2.20.8",
+    "@types/uuid": "^10.0.0",
+    "uuid": "^11.1.0"
   }
 }

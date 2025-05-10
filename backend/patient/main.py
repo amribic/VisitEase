@@ -264,7 +264,9 @@ def fitness():
 
 @app.route('/upload-image', methods=['POST'])
 @login_required
-def upload_image(image_type: str, uuid: str):
+def upload_image():
+    image_type = request.args.get('image_type')
+    uuid = request.args.get('uuid')
     file = request.files.get('image')
     if file and file.filename.endswith(('.jpg', '.jpeg', '.png')):
         user_id = current_user.id
