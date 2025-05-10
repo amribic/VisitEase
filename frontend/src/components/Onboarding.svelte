@@ -153,52 +153,54 @@
     }
 
     async function handleInsuranceUpload(event) {
-      const file = event.currentTarget.files?.[0];
-      if (file) {
+      const files = event.currentTarget.files;
+      if (files && files.length > 0) {
         uploading = true;
         insuranceError = '';
         insuranceSuccess = '';
 
-        const formData = new FormData();
-        formData.append('image', file);
-
         try {
-          const response = await fetch(`http://localhost:8080/upload-image?image_type=insurance-card&uuid=${insuranceUuid}`, {
-            method: 'POST',
-            body: formData,
-            credentials: 'include'
-          });
-          const data = await response.json();
-          
-          if (data.success) {
-            insuranceConnected = true;
-            insuranceSuccess = 'Insurance card uploaded successfully!';
+          for (let i = 0; i < files.length; i++) {
+            const formData = new FormData();
+            formData.append('image', files[i]);
 
-            // Call convert_images_to_pdf after successful upload
-            const pdfForm = new FormData();
-            pdfForm.append('image_type', 'insurance-card');
-            pdfForm.append('uuid', insuranceUuid);
-            try {
-              const pdfResponse = await fetch('http://localhost:8080/convert-images-to-pdf', {
-                method: 'POST',
-                body: pdfForm,
-                credentials: 'include'
-              });
-              const pdfData = await pdfResponse.json();
-              if (pdfData.success) {
-                console.log('Insurance PDF generated:', pdfData.pdf_url);
-              } else {
-                console.error('Insurance PDF generation failed:', pdfData.message);
-              }
-            } catch (pdfError) {
-              console.error('Error calling convert_images_to_pdf for insurance:', pdfError);
+            const response = await fetch(`http://localhost:8080/upload-image?image_type=insurance-card&uuid=${insuranceUuid}`, {
+              method: 'POST',
+              body: formData,
+              credentials: 'include'
+            });
+            const data = await response.json();
+            
+            if (!data.success) {
+              throw new Error(data.message || 'Upload failed');
             }
-          } else {
-            insuranceError = data.message || 'Upload failed';
+          }
+          
+          insuranceConnected = true;
+          insuranceSuccess = `${files.length} file(s) uploaded successfully!`;
+
+          // Call convert_images_to_pdf after successful upload
+          const pdfForm = new FormData();
+          pdfForm.append('image_type', 'insurance-card');
+          pdfForm.append('uuid', insuranceUuid);
+          try {
+            const pdfResponse = await fetch('http://localhost:8080/convert-images-to-pdf', {
+              method: 'POST',
+              body: pdfForm,
+              credentials: 'include'
+            });
+            const pdfData = await pdfResponse.json();
+            if (pdfData.success) {
+              console.log('Insurance PDF generated:', pdfData.pdf_url);
+            } else {
+              console.error('Insurance PDF generation failed:', pdfData.message);
+            }
+          } catch (pdfError) {
+            console.error('Error calling convert_images_to_pdf for insurance:', pdfError);
           }
         } catch (error) {
           console.error('Insurance upload error:', error);
-          insuranceError = 'Failed to upload insurance card. Please try again.';
+          insuranceError = 'Failed to upload one or more files. Please try again.';
         } finally {
           uploading = false;
         }
@@ -228,16 +230,46 @@
     }
 
     async function handleDoctorLetterUpload(event) {
-      const file = event.currentTarget.files?.[0];
-      if (file) {
-        await handleFileUpload(file, 'doctorLetter');
+      const files = event.currentTarget.files;
+      if (files && files.length > 0) {
+        uploading = true;
+        doctorLetterError = '';
+        doctorLetterSuccess = '';
+        
+        try {
+          for (let i = 0; i < files.length; i++) {
+            await handleFileUpload(files[i], 'doctorLetter');
+          }
+          doctorLetterUploaded = true;
+          doctorLetterSuccess = `${files.length} file(s) uploaded successfully!`;
+        } catch (error) {
+          console.error('Doctor letter upload error:', error);
+          doctorLetterError = 'Failed to upload one or more files. Please try again.';
+        } finally {
+          uploading = false;
+        }
       }
     }
 
     async function handleMedicalInfoUpload(event) {
-      const file = event.currentTarget.files?.[0];
-      if (file) {
-        await handleFileUpload(file, 'medicationPlan');
+      const files = event.currentTarget.files;
+      if (files && files.length > 0) {
+        uploading = true;
+        medicalInfoError = '';
+        medicalInfoSuccess = '';
+        
+        try {
+          for (let i = 0; i < files.length; i++) {
+            await handleFileUpload(files[i], 'medicationPlan');
+          }
+          medicalInfoUploaded = true;
+          medicalInfoSuccess = `${files.length} file(s) uploaded successfully!`;
+        } catch (error) {
+          console.error('Medical info upload error:', error);
+          medicalInfoError = 'Failed to upload one or more files. Please try again.';
+        } finally {
+          uploading = false;
+        }
       }
     }
   
@@ -310,7 +342,7 @@
               <div>Insurance Card Uploaded!</div>
             {:else}
               <label class="file-upload">
-                <input type="file" accept="image/*" on:change={handleInsuranceUpload} disabled={uploading} />
+                <input type="file" accept="image/*" multiple on:change={handleInsuranceUpload} disabled={uploading} />
                 <span>{uploading ? 'Uploading...' : 'Upload Insurance Card'}</span>
               </label>
               {#if insuranceError}
@@ -344,7 +376,7 @@
               <div>Latest Doctor's Letter Uploaded!</div>
             {:else}
               <label class="file-upload">
-                <input type="file" accept="image/*" on:change={handleDoctorLetterUpload} disabled={uploading} />
+                <input type="file" accept="image/*" multiple on:change={handleDoctorLetterUpload} disabled={uploading} />
                 <span>{uploading ? 'Uploading...' : 'Upload Latest Doctor\'s Letter'}</span>
               </label>
               {#if doctorLetterError}
@@ -361,7 +393,7 @@
               <div>Latest Medical Information Uploaded!</div>
             {:else}
               <label class="file-upload">
-                <input type="file" accept="image/*" on:change={handleMedicalInfoUpload} disabled={uploading} />
+                <input type="file" accept="image/*" multiple on:change={handleMedicalInfoUpload} disabled={uploading} />
                 <span>{uploading ? 'Uploading...' : 'Upload Latest Medical Information'}</span>
               </label>
               {#if medicalInfoError}
