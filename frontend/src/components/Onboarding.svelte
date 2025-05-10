@@ -1,5 +1,6 @@
-<script>
+<script lang="ts">
     import GoogleFitForm from './GoogleFitForm.svelte';
+    import NewInfoCheck from './NewInfoCheck.svelte';
     import { v4 as uuidv4 } from 'uuid';
     
     // Steps data model
@@ -13,6 +14,7 @@
     ];
   
     let currentStep = 0;
+    let showNewInfoCheck = true;
     let insuranceConnected = false;
     let labReportUploaded = false;
     let doctorLetterUploaded = false;
@@ -34,8 +36,17 @@
     let doctorLetterUuid = uuidv4();
     let medicalInfoUuid = uuidv4();
 
+    function handleHasNewInfo() {
+      showNewInfoCheck = false;
+    }
+
+    function handleNoNewInfo() {
+      showNewInfoCheck = false;
+      currentStep = steps.length - 1; // Set to the last step which is "All Done!"
+    }
+
     // Reset UUIDs when moving to a new step
-    function resetUuid(stepType) {
+    function resetUuid(stepType: string) {
       switch(stepType) {
         case 'insurance':
           insuranceUuid = uuidv4();
@@ -62,7 +73,7 @@
       uploading = false;
     }
   
-    async function handleFileUpload(file, type) {
+    async function handleFileUpload(file: File, type: string) {
       uploading = true;
       // Reset all errors/success for the current type
       if (type === 'labData') {
@@ -152,8 +163,9 @@
       }
     }
 
-    async function handleInsuranceUpload(event) {
-      const files = event.currentTarget.files;
+    async function handleInsuranceUpload(event: Event) {
+      const target = event.target as HTMLInputElement;
+      const files = target.files;
       if (files && files.length > 0) {
         uploading = true;
         insuranceError = '';
@@ -205,165 +217,36 @@
       }
     }
 
-    async function handleLabReportUpload(event) {
-      const files = event.currentTarget.files;
+    async function handleLabReportUpload(event: Event) {
+      const target = event.target as HTMLInputElement;
+      const files = target.files;
       if (files && files.length > 0) {
-        uploading = true;
-        labReportError = '';
-        labReportSuccess = '';
-        
-        try {
-          // First upload all files
-          for (let i = 0; i < files.length; i++) {
-            const formData = new FormData();
-            formData.append('image', files[i]);
-            
-            const response = await fetch(`http://localhost:8080/upload-image?image_type=labData&uuid=${labReportUuid}`, {
-              method: 'POST',
-              body: formData,
-              credentials: 'include'
-            });
-            
-            const data = await response.json();
-            if (!data.success) {
-              throw new Error('Failed to upload one or more files');
-            }
-          }
-          
-          // After all files are uploaded, trigger single PDF conversion and Gemini API call
-          const pdfForm = new FormData();
-          pdfForm.append('image_type', 'labData');
-          pdfForm.append('uuid', labReportUuid);
-          
-          const pdfResponse = await fetch('http://localhost:8080/convert-images-to-pdf', {
-            method: 'POST',
-            body: pdfForm,
-            credentials: 'include'
-          });
-          const pdfData = await pdfResponse.json();
-          
-          if (pdfData.success) {
-            labReportUploaded = true;
-            labReportSuccess = `${files.length} file(s) uploaded and processed successfully!`;
-            console.log('Lab report PDF generated:', pdfData.pdf_url);
-          } else {
-            throw new Error(pdfData.message || 'PDF generation failed');
-          }
-        } catch (error) {
-          console.error('Lab report upload error:', error);
-          labReportError = 'Failed to process files. Please try again.';
-        } finally {
-          uploading = false;
+        for (let i = 0; i < files.length; i++) {
+          await handleFileUpload(files[i], 'labData');
         }
       }
     }
 
-    async function handleDoctorLetterUpload(event) {
-      const files = event.currentTarget.files;
+    async function handleDoctorLetterUpload(event: Event) {
+      const target = event.target as HTMLInputElement;
+      const files = target.files;
       if (files && files.length > 0) {
-        uploading = true;
-        doctorLetterError = '';
-        doctorLetterSuccess = '';
-        
-        try {
-          // First upload all files
-          for (let i = 0; i < files.length; i++) {
-            const formData = new FormData();
-            formData.append('image', files[i]);
-            
-            const response = await fetch(`http://localhost:8080/upload-image?image_type=doctorLetter&uuid=${doctorLetterUuid}`, {
-              method: 'POST',
-              body: formData,
-              credentials: 'include'
-            });
-            
-            const data = await response.json();
-            if (!data.success) {
-              throw new Error('Failed to upload one or more files');
-            }
-          }
-          
-          // After all files are uploaded, trigger single PDF conversion and Gemini API call
-          const pdfForm = new FormData();
-          pdfForm.append('image_type', 'doctorLetter');
-          pdfForm.append('uuid', doctorLetterUuid);
-          
-          const pdfResponse = await fetch('http://localhost:8080/convert-images-to-pdf', {
-            method: 'POST',
-            body: pdfForm,
-            credentials: 'include'
-          });
-          const pdfData = await pdfResponse.json();
-          
-          if (pdfData.success) {
-            doctorLetterUploaded = true;
-            doctorLetterSuccess = `${files.length} file(s) uploaded and processed successfully!`;
-            console.log('Doctor letter PDF generated:', pdfData.pdf_url);
-          } else {
-            throw new Error(pdfData.message || 'PDF generation failed');
-          }
-        } catch (error) {
-          console.error('Doctor letter upload error:', error);
-          doctorLetterError = 'Failed to process files. Please try again.';
-        } finally {
-          uploading = false;
+        for (let i = 0; i < files.length; i++) {
+          await handleFileUpload(files[i], 'doctorLetter');
         }
       }
     }
 
-    async function handleMedicalInfoUpload(event) {
-      const files = event.currentTarget.files;
+    async function handleMedicalInfoUpload(event: Event) {
+      const target = event.target as HTMLInputElement;
+      const files = target.files;
       if (files && files.length > 0) {
-        uploading = true;
-        medicalInfoError = '';
-        medicalInfoSuccess = '';
-        
-        try {
-          // First upload all files
-          for (let i = 0; i < files.length; i++) {
-            const formData = new FormData();
-            formData.append('image', files[i]);
-            
-            const response = await fetch(`http://localhost:8080/upload-image?image_type=medicationPlan&uuid=${medicalInfoUuid}`, {
-              method: 'POST',
-              body: formData,
-              credentials: 'include'
-            });
-            
-            const data = await response.json();
-            if (!data.success) {
-              throw new Error('Failed to upload one or more files');
-            }
-          }
-          
-          // After all files are uploaded, trigger single PDF conversion and Gemini API call
-          const pdfForm = new FormData();
-          pdfForm.append('image_type', 'medicationPlan');
-          pdfForm.append('uuid', medicalInfoUuid);
-          
-          const pdfResponse = await fetch('http://localhost:8080/convert-images-to-pdf', {
-            method: 'POST',
-            body: pdfForm,
-            credentials: 'include'
-          });
-          const pdfData = await pdfResponse.json();
-          
-          if (pdfData.success) {
-            medicalInfoUploaded = true;
-            medicalInfoSuccess = `${files.length} file(s) uploaded and processed successfully!`;
-            console.log('Medical info PDF generated:', pdfData.pdf_url);
-          } else {
-            throw new Error(pdfData.message || 'PDF generation failed');
-          }
-        } catch (error) {
-          console.error('Medical info upload error:', error);
-          medicalInfoError = 'Failed to process files. Please try again.';
-        } finally {
-          uploading = false;
+        for (let i = 0; i < files.length; i++) {
+          await handleFileUpload(files[i], 'medicationPlan');
         }
       }
     }
-  
+
     function handleContinue() {
       if (currentStep < steps.length - 1) {
         // If next step is an upload step, generate a new UUID for it
@@ -400,10 +283,10 @@
   
     // Optional: handle swipe/scroll navigation
     let startY = 0;
-    function handleTouchStart(e) {
+    function handleTouchStart(e: TouchEvent) {
       startY = e.touches[0].clientY;
     }
-    function handleTouchEnd(e) {
+    function handleTouchEnd(e: TouchEvent) {
       const endY = e.changedTouches[0].clientY;
       if (startY - endY > 50) handleContinue(); // swipe up
       if (endY - startY > 50 && currentStep > 0) currentStep -= 1; // swipe down
@@ -417,21 +300,25 @@
       googleFitConnected = true;
       handleContinue();
     }
-  </script>
+</script>
   
-  <div
-    class="onboarding-outer"
-    on:touchstart={handleTouchStart}
-    on:touchend={handleTouchEnd}
-  >
-    {#if uploading}
-      <div class="loading-overlay">
-        <div class="loading-popup">
-          <div class="loading-spinner"></div>
-          <div class="loading-text">Uploading files...</div>
-        </div>
+<div
+  class="onboarding-outer"
+  on:touchstart={handleTouchStart}
+  on:touchend={handleTouchEnd}
+>
+  {#if uploading}
+    <div class="loading-overlay">
+      <div class="loading-popup">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Uploading files...</div>
       </div>
-    {/if}
+    </div>
+  {/if}
+
+  {#if showNewInfoCheck}
+    <NewInfoCheck on:hasNewInfo={handleHasNewInfo} on:noNewInfo={handleNoNewInfo} />
+  {:else}
     <div class="onboarding-container">
       <div class="onboarding-title">{steps[currentStep].title}</div>
       <div class="onboarding-content">
@@ -521,258 +408,259 @@
         </div>
       {/if}
     </div>
-  </div>
+  {/if}
+</div>
   
-  <style>
-    .onboarding-outer {
-      min-height: 100vh;
-      min-width: 100vw;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #f8fff9;
+<style>
+  .onboarding-outer {
+    min-height: 100vh;
+    min-width: 100vw;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8fff9;
+    padding: 1rem;
+    box-sizing: border-box;
+  }
+
+  .onboarding-container {
+    width: 100%;
+    max-width: 400px;
+    min-height: min(80vh, 600px);
+    background: #fff;
+    border-radius: 1.5rem;
+    box-shadow: 0 4px 24px rgba(106,0,255,0.08);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    box-sizing: border-box;
+    transition: box-shadow 0.2s;
+    gap: 1.5rem;
+  }
+
+  .onboarding-title {
+    font-family: 'DM Sans', sans-serif;
+    font-size: clamp(1.25rem, 5vw, 1.5rem);
+    color: #6a00ff;
+    text-align: center;
+    font-weight: 600;
+    padding: 0 1rem;
+    margin: 0;
+  }
+
+  .onboarding-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    flex: 1;
+    min-height: min(60vh, 400px);
+  }
+
+  .square-placeholder {
+    width: min(85vw, 300px);
+    height: min(85vw, 300px);
+    background: #f8fff9;
+    border: 2px dashed #6a00ff;
+    border-radius: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6a00ff;
+    font-size: clamp(0.9rem, 4vw, 1.1rem);
+    font-family: 'DM Sans', sans-serif;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+    text-align: center;
+  }
+
+  .action-btn {
+    background: #6a00ff;
+    color: #fff;
+    border: none;
+    border-radius: 0.75rem;
+    padding: 0.875rem 1.5rem;
+    font-size: clamp(0.9rem, 4vw, 1rem);
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: background 0.2s;
+    width: min(100%, 200px);
+  }
+
+  .action-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+  }
+
+  .file-upload {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    color: #6a00ff;
+    font-family: 'DM Sans', sans-serif;
+    width: 100%;
+  }
+
+  .file-upload input[type="file"] {
+    display: none;
+  }
+
+  .file-upload span {
+    background: #6a00ff;
+    color: #fff;
+    border-radius: 0.75rem;
+    padding: 0.875rem 1.5rem;
+    font-size: clamp(0.9rem, 4vw, 1rem);
+    cursor: pointer;
+    transition: background 0.2s;
+    display: inline-block;
+    text-align: center;
+    width: min(100%, 200px);
+  }
+
+  .file-upload span:active {
+    background: #7c1fff;
+  }
+
+  .onboarding-actions {
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin: 0;
+  }
+
+  .onboarding-actions button {
+    flex: 1;
+    padding: 0.875rem 0;
+    border-radius: 0.75rem;
+    border: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: clamp(0.9rem, 4vw, 1rem);
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+  }
+
+  .onboarding-actions .skip {
+    background: #f8fff9;
+    color: #6a00ff;
+    border: 2px solid #6a00ff;
+  }
+
+  .onboarding-actions .skip:hover {
+    background: #e7fff2;
+  }
+
+  .onboarding-actions .continue {
+    background: #6a00ff;
+    color: #fff;
+    border: 2px solid #6a00ff;
+  }
+
+  .onboarding-actions .continue:hover {
+    background: #7c1fff;
+  }
+
+  @media (max-width: 360px) {
+    .onboarding-container {
       padding: 1rem;
-      box-sizing: border-box;
+      gap: 1rem;
     }
 
+    .square-placeholder {
+      padding: 0.75rem;
+    }
+
+    .onboarding-actions {
+      gap: 0.5rem;
+    }
+
+    .onboarding-actions button {
+      padding: 0.75rem 0;
+    }
+  }
+
+  @media (max-height: 600px) {
     .onboarding-container {
-      width: 100%;
-      max-width: 400px;
-      min-height: min(80vh, 600px);
-      background: #fff;
-      border-radius: 1.5rem;
-      box-shadow: 0 4px 24px rgba(106,0,255,0.08);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 1.5rem;
-      box-sizing: border-box;
-      transition: box-shadow 0.2s;
-      gap: 1.5rem;
+      min-height: auto;
+      padding: 1rem;
+      gap: 1rem;
     }
 
     .onboarding-title {
-      font-family: 'DM Sans', sans-serif;
-      font-size: clamp(1.25rem, 5vw, 1.5rem);
-      color: #6a00ff;
-      text-align: center;
-      font-weight: 600;
-      padding: 0 1rem;
       margin: 0;
     }
 
     .onboarding-content {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 100%;
-      flex: 1;
-      min-height: min(60vh, 400px);
+      min-height: min(50vh, 300px);
     }
 
     .square-placeholder {
-      width: min(85vw, 300px);
-      height: min(85vw, 300px);
-      background: #f8fff9;
-      border: 2px dashed #6a00ff;
-      border-radius: 1.25rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #6a00ff;
-      font-size: clamp(0.9rem, 4vw, 1.1rem);
-      font-family: 'DM Sans', sans-serif;
-      flex-direction: column;
-      gap: 1rem;
-      padding: 1rem;
-      text-align: center;
+      height: min(70vw, 250px);
     }
+  }
 
-    .action-btn {
-      background: #6a00ff;
-      color: #fff;
-      border: none;
-      border-radius: 0.75rem;
-      padding: 0.875rem 1.5rem;
-      font-size: clamp(0.9rem, 4vw, 1rem);
-      font-family: 'DM Sans', sans-serif;
-      cursor: pointer;
-      transition: background 0.2s;
-      width: min(100%, 200px);
-    }
+  .error-message {
+    color: #dc2626;
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+    text-align: center;
+  }
 
-    .action-btn:disabled {
-      background: #ccc;
-      cursor: not-allowed;
-    }
+  .success-message {
+    color: #059669;
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+    text-align: center;
+  }
 
-    .file-upload {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0.5rem;
-      cursor: pointer;
-      color: #6a00ff;
-      font-family: 'DM Sans', sans-serif;
-      width: 100%;
-    }
+  .loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
 
-    .file-upload input[type="file"] {
-      display: none;
-    }
+  .loading-popup {
+    background: white;
+    padding: 2rem;
+    border-radius: 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+  }
 
-    .file-upload span {
-      background: #6a00ff;
-      color: #fff;
-      border-radius: 0.75rem;
-      padding: 0.875rem 1.5rem;
-      font-size: clamp(0.9rem, 4vw, 1rem);
-      cursor: pointer;
-      transition: background 0.2s;
-      display: inline-block;
-      text-align: center;
-      width: min(100%, 200px);
-    }
+  .loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #6a00ff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
 
-    .file-upload span:active {
-      background: #7c1fff;
-    }
+  .loading-text {
+    color: #6a00ff;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1rem;
+  }
 
-    .onboarding-actions {
-      display: flex;
-      width: 100%;
-      justify-content: space-between;
-      gap: 0.75rem;
-      margin: 0;
-    }
-
-    .onboarding-actions button {
-      flex: 1;
-      padding: 0.875rem 0;
-      border-radius: 0.75rem;
-      border: none;
-      font-family: 'DM Sans', sans-serif;
-      font-size: clamp(0.9rem, 4vw, 1rem);
-      font-weight: 500;
-      cursor: pointer;
-      transition: background 0.2s, color 0.2s;
-    }
-
-    .onboarding-actions .skip {
-      background: #f8fff9;
-      color: #6a00ff;
-      border: 2px solid #6a00ff;
-    }
-
-    .onboarding-actions .skip:hover {
-      background: #e7fff2;
-    }
-
-    .onboarding-actions .continue {
-      background: #6a00ff;
-      color: #fff;
-      border: 2px solid #6a00ff;
-    }
-
-    .onboarding-actions .continue:hover {
-      background: #7c1fff;
-    }
-
-    @media (max-width: 360px) {
-      .onboarding-container {
-        padding: 1rem;
-        gap: 1rem;
-      }
-
-      .square-placeholder {
-        padding: 0.75rem;
-      }
-
-      .onboarding-actions {
-        gap: 0.5rem;
-      }
-
-      .onboarding-actions button {
-        padding: 0.75rem 0;
-      }
-    }
-
-    @media (max-height: 600px) {
-      .onboarding-container {
-        min-height: auto;
-        padding: 1rem;
-        gap: 1rem;
-      }
-
-      .onboarding-title {
-        margin: 0;
-      }
-
-      .onboarding-content {
-        min-height: min(50vh, 300px);
-      }
-
-      .square-placeholder {
-        height: min(70vw, 250px);
-      }
-    }
-
-    .error-message {
-      color: #dc2626;
-      font-size: 0.875rem;
-      margin-top: 0.5rem;
-      text-align: center;
-    }
-
-    .success-message {
-      color: #059669;
-      font-size: 0.875rem;
-      margin-top: 0.5rem;
-      text-align: center;
-    }
-
-    .loading-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: rgba(0, 0, 0, 0.5);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-    }
-
-    .loading-popup {
-      background: white;
-      padding: 2rem;
-      border-radius: 1rem;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 1rem;
-      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
-    }
-
-    .loading-spinner {
-      width: 40px;
-      height: 40px;
-      border: 4px solid #f3f3f3;
-      border-top: 4px solid #6a00ff;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-
-    .loading-text {
-      color: #6a00ff;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 1rem;
-    }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-  </style>
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+</style>
