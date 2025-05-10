@@ -206,9 +206,24 @@
     }
 
     async function handleLabReportUpload(event) {
-      const file = event.currentTarget.files?.[0];
-      if (file) {
-        await handleFileUpload(file, 'labData');
+      const files = event.currentTarget.files;
+      if (files && files.length > 0) {
+        uploading = true;
+        labReportError = '';
+        labReportSuccess = '';
+        
+        try {
+          for (let i = 0; i < files.length; i++) {
+            await handleFileUpload(files[i], 'labData');
+          }
+          labReportUploaded = true;
+          labReportSuccess = `${files.length} file(s) uploaded successfully!`;
+        } catch (error) {
+          console.error('Lab report upload error:', error);
+          labReportError = 'Failed to upload one or more files. Please try again.';
+        } finally {
+          uploading = false;
+        }
       }
     }
 
@@ -312,7 +327,7 @@
               <div>Latest Lab Report Uploaded!</div>
             {:else}
               <label class="file-upload">
-                <input type="file" accept="image/*" on:change={handleLabReportUpload} disabled={uploading} />
+                <input type="file" accept="image/*" multiple on:change={handleLabReportUpload} disabled={uploading} />
                 <span>{uploading ? 'Uploading...' : 'Upload Latest Lab Report'}</span>
               </label>
               {#if labReportError}
