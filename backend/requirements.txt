@@ -1,1 +1,7 @@
 requests-oauthlib==2.0.0
+flask
+google-auth-oauthlib
+requests
+flask-login
+werkzeug
+firebase-admin

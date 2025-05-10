@@ -2,6 +2,8 @@ import os
 from google_auth_oauthlib.flow import Flow
 import requests
 import datetime
+from firebase_config import db
+from firebase_admin import firestore
 
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
@@ -105,3 +107,14 @@ def get_distance(access_token):
     except Exception as e:
         print("Error parsing distance data:", e)
     return distance  # in meters
+
+# Save fitness data to Firestore
+def save_fitness_data(user_id, steps, heart_rate, calories, distance):
+    fitness_ref = db.collection("fitness_data").document(user_id)
+    fitness_ref.set({
+        'steps': steps,
+        'heart_rate': heart_rate,
+        'calories': calories,
+        'distance': distance,
+        'timestamp': firestore.SERVER_TIMESTAMP  # Automatically set the timestamp when data is added
+    })
