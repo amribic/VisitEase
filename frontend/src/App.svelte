@@ -58,14 +58,19 @@
 </main>
 
 <style>
-  :global(body) {
+  :global(html), :global(body) {
+    width: 100vw;
+    min-height: 100vh;
     margin: 0;
     padding: 0;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+    box-sizing: border-box;
     background-color: #f5f5f5;
     overflow-x: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  }
+
+  :global(*), :global(*::before), :global(*::after) {
+    box-sizing: inherit;
   }
 
   main {
@@ -85,5 +90,13 @@
     max-width: 1200px;
     margin: 0 auto;
     padding: 0 1rem;
+  }
+
+  @media (max-width: 600px) {
+    .container {
+      max-width: 100vw;
+      width: 100vw;
+      padding: 0;
+    }
   }
 </style> 

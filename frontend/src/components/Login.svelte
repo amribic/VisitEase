@@ -88,12 +88,14 @@
 <style>
   .login-container {
     background: white;
-    padding: 2rem;
+    padding: 1rem;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    max-width: 400px;
+    max-width: 100%;
     width: 100%;
     margin: 0 auto;
+    max-height: 100vh;
+    overflow-y: auto;
   }
 
   h1 {
@@ -185,11 +187,25 @@
 
   @media (max-width: 480px) {
     .login-container {
-      padding: 1.5rem;
+      padding: 1rem;
     }
 
     h1 {
-      font-size: 1.75rem;
+      font-size: 1.5rem;
+    }
+
+    button {
+      padding: 0.5rem;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .login-container {
+      width: 100vw;
+      max-width: 100vw;
+      border-radius: 0;
+      box-shadow: none;
+      padding: 0.5rem;
     }
   }
 </style> 

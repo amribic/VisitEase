@@ -213,4 +213,14 @@
       font-size: 1.75rem;
     }
   }
+
+  @media (max-width: 600px) {
+    .signup-container {
+      width: 100vw;
+      max-width: 100vw;
+      border-radius: 0;
+      box-shadow: none;
+      padding: 0.5rem;
+    }
+  }
 </style> 

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher, onMount } from 'svelte';
+  import googleFitLogo from '../assets/google-fit-logo.png';
   const dispatch = createEventDispatcher();
 
   let isConnected = false;
@@ -87,6 +88,10 @@
   {/if}
 
   <div class="content">
+    <div class="google-fit-icon">
+      <img src={googleFitLogo} alt="Google Fit logo" width="48" height="48" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));" />
+    </div>
+    
     <p>Would you like to connect your Google Fit data to enhance your experience?</p>
     
     <div class="buttons">
@@ -126,12 +131,14 @@
 <style>
   .form-container {
     background: white;
-    padding: 2rem;
+    padding: 1rem;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    max-width: 500px;
+    max-width: 100%;
     width: 100%;
     margin: 0 auto;
+    max-height: 100vh;
+    overflow-y: auto;
   }
 
   h1 {
@@ -146,6 +153,14 @@
 
   .content {
     text-align: center;
+  }
+
+  .google-fit-icon {
+    margin-bottom: 1.5rem;
+  }
+
+  .google-fit-icon img {
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
   }
 
   p {
@@ -222,11 +237,25 @@
 
   @media (max-width: 480px) {
     .form-container {
-      padding: 1.5rem;
+      padding: 1rem;
     }
 
     h1 {
-      font-size: 1.75rem;
+      font-size: 1.5rem;
+    }
+
+    button {
+      padding: 0.5rem;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .form-container {
+      width: 100vw;
+      max-width: 100vw;
+      border-radius: 0;
+      box-shadow: none;
+      padding: 0.5rem;
     }
   }
 </style> 

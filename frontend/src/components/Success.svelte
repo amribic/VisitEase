@@ -62,4 +62,14 @@
   button:hover {
     background-color: #45a049;
   }
+
+  @media (max-width: 600px) {
+    .success-container {
+      width: 100vw;
+      max-width: 100vw;
+      border-radius: 0;
+      box-shadow: none;
+      padding: 0.5rem;
+    }
+  }
 </style> 
