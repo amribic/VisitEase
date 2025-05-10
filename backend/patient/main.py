@@ -561,5 +561,10 @@ def conversation_turn():
         response.headers['Content-Type'] = 'audio/wav'
         return response
 
+@app.route('/get-structured-data', methods=["GET"])
+@login_required
+def get_structured_data():
+    return model_user_data(current_user.id)
+
 if __name__ == '__main__':
     app.run(port=8080, debug=True, use_reloader=False)
