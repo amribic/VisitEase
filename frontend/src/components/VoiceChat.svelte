@@ -17,8 +17,39 @@
     let speechSynthesis = window.speechSynthesis;
     let showUserBubble = false;
     let showAssistantBubble = false;
+    let isIOS = false;
 
     onMount(() => {
+        // Check browser compatibility
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+        isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+        const hasSpeechRecognition = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
+        const hasMediaRecorder = 'MediaRecorder' in window;
+        
+        // Special handling for Safari on iOS
+        if (isIOS && isSafari) {
+            console.log('Detected Safari on iOS');
+            // Use MediaRecorder as fallback for iOS Safari
+            if (!hasMediaRecorder) {
+                console.error('MediaRecorder not supported on this device');
+                messages = [{
+                    role: 'assistant',
+                    content: 'Voice input is not supported in Safari on iOS. Please try using Chrome on Android or a desktop browser.',
+                    id: messageId++
+                }];
+                return;
+            }
+        } else if (!hasSpeechRecognition && !hasMediaRecorder) {
+            console.error('Speech recognition not supported in this browser');
+            messages = [{
+                role: 'assistant',
+                content: 'Speech recognition is not supported in your browser. Please try using Chrome or Safari on desktop.',
+                id: messageId++
+            }];
+            return;
+        }
+
         // Check if browser is Firefox
         isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
 
@@ -30,60 +61,16 @@
             // Wait for voices to be loaded
             if (speechSynthesis.getVoices().length === 0) {
                 speechSynthesis.onvoiceschanged = () => {
-                    // Get initial message from backend
-                    fetch(`${API_URL}/api/chat`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ message: 'start' }),
-                        credentials: 'include'
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.response) {
-                            messages = [{
-                                role: 'assistant',
-                                content: data.response,
-                                id: messageId++
-                            }];
-                            speakMessage(data.response);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error getting initial message:', error);
-                    });
+                    initializeChat();
                 };
             } else {
-                // Get initial message from backend
-                fetch(`${API_URL}/api/chat`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ message: 'start' }),
-                    credentials: 'include'
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.response) {
-                        messages = [{
-                            role: 'assistant',
-                            content: data.response,
-                            id: messageId++
-                        }];
-                        speakMessage(data.response);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error getting initial message:', error);
-                });
+                initializeChat();
             }
         }
 
-        // Initialize speech recognition for non-Firefox browsers
-        if (!isFirefox && 'webkitSpeechRecognition' in window) {
-            recognition = new (window as any).webkitSpeechRecognition();
+        // Initialize speech recognition for non-Firefox and non-iOS browsers
+        if (!isFirefox && !isIOS && hasSpeechRecognition) {
+            recognition = new (window as any).webkitSpeechRecognition() || new (window as any).SpeechRecognition();
             recognition.continuous = false;
             recognition.interimResults = true;
             recognition.lang = 'en-US';
@@ -137,6 +124,40 @@
             };
         }
     });
+
+    async function initializeChat() {
+        try {
+            const response = await fetch(`${API_URL}/api/chat`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ message: 'start' }),
+                credentials: 'include'
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            if (data.response) {
+                messages = [{
+                    role: 'assistant',
+                    content: data.response,
+                    id: messageId++
+                }];
+                speakMessage(data.response);
+            }
+        } catch (error) {
+            console.error('Error getting initial message:', error);
+            messages = [{
+                role: 'assistant',
+                content: 'I apologize, but I encountered an error. Please try refreshing the page.',
+                id: messageId++
+            }];
+        }
+    }
 
     async function speakMessage(text: string) {
         try {
@@ -194,7 +215,11 @@
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             
-            if (isFirefox) {
+            // Use MediaRecorder for Firefox, iOS Safari, or when SpeechRecognition is not available
+            if (isFirefox || isIOS || !('webkitSpeechRecognition' in window)) {
+                if (!('MediaRecorder' in window)) {
+                    throw new Error('MediaRecorder not supported');
+                }
                 mediaRecorder = new MediaRecorder(stream);
                 audioChunks = [];
                 showUserBubble = true;
@@ -209,7 +234,12 @@
                     await processAudio(audioBlob);
                 };
 
-                mediaRecorder.start();
+                // For iOS Safari, we need to request data more frequently
+                if (isIOS) {
+                    mediaRecorder.start(1000); // Request data every second
+                } else {
+                    mediaRecorder.start();
+                }
                 isRecording = true;
             } else if (recognition) {
                 userInput = '';
@@ -219,7 +249,11 @@
             }
         } catch (error) {
             console.error('Error accessing microphone:', error);
-            alert('Could not access microphone. Please make sure you have granted microphone permissions.');
+            messages = [...messages, {
+                role: 'assistant',
+                content: 'Could not access microphone. Please make sure you have granted microphone permissions.',
+                id: messageId++
+            }];
         }
     }
 
