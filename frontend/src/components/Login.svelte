@@ -44,7 +44,13 @@
 </script>
 
 <div class="login-container">
-  <h1>Login</h1>
+  <div class="logo-container">
+    <div class="logo">
+      <span class="logo-text">Visit</span>
+      <span class="logo-text-accent">Ease</span>
+    </div>
+    <div class="tagline">Your Healthcare Journey, Simplified</div>
+  </div>
   
   {#if error}
     <div class="error-message">
@@ -86,25 +92,48 @@
 </div>
 
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
   .login-container {
     background: white;
-    padding: 1.5rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    max-width: 400px; 
+    padding: 2.5rem;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    max-width: 420px;
     width: 100%;
-    margin: 0 auto;
+    margin: 2rem auto;
     position: relative;
+    font-family: 'Poppins', sans-serif;
   }
 
-  h1 {
+  .logo-container {
+    text-align: center;
+    margin-bottom: 2.5rem;
+  }
+
+  .logo {
+    margin-bottom: 0.5rem;
+  }
+
+  .logo-text {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #333;
+    letter-spacing: -0.5px;
+  }
+
+  .logo-text-accent {
+    font-size: 2.5rem;
+    font-weight: 700;
     color: #6a00ff;
-    text-transform: uppercase;
-    font-size: 2rem;
-    font-weight: 100;
-    margin: 0 0 2rem 0;
-    padding: 0;
-    line-height: 1.2;
+    letter-spacing: -0.5px;
+  }
+
+  .tagline {
+    color: #666;
+    font-size: 1rem;
+    font-weight: 400;
+    margin-top: 0.5rem;
   }
 
   .form-group {
@@ -117,60 +146,71 @@
     margin-bottom: 0.5rem;
     color: #333;
     font-weight: 500;
+    font-size: 0.95rem;
   }
 
   input {
     width: 100%;
-    padding: 0.75rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+    padding: 0.875rem;
+    border: 2px solid #eee;
+    border-radius: 8px;
     font-size: 1rem;
     box-sizing: border-box;
     -webkit-appearance: none;
     appearance: none;
+    transition: all 0.2s ease;
+    font-family: 'Poppins', sans-serif;
   }
 
   input:focus {
     outline: none;
     border-color: #6a00ff;
-    box-shadow: 0 0 0 2px rgba(106, 0, 255, 0.1);
+    box-shadow: 0 0 0 4px rgba(106, 0, 255, 0.1);
   }
 
   button {
     width: 100%;
-    padding: 0.75rem;
+    padding: 0.875rem;
     background-color: #6a00ff;
     color: white;
     border: none;
-    border-radius: 4px;
+    border-radius: 8px;
     font-size: 1rem;
+    font-weight: 500;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: all 0.2s ease;
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
+    font-family: 'Poppins', sans-serif;
   }
 
   button:hover, button:active {
     background-color: #7c1fff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(106, 0, 255, 0.2);
   }
 
   button:disabled {
     background-color: #ccc;
     cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
   }
 
   .error-message {
     background-color: #ffebee;
     color: #c62828;
-    padding: 0.75rem;
-    border-radius: 4px;
+    padding: 1rem;
+    border-radius: 8px;
     margin-bottom: 1.5rem;
     font-size: 0.9rem;
+    border: 1px solid #ffcdd2;
   }
 
   .signup-link {
     margin-top: 1.5rem;
     color: #666;
+    font-size: 0.95rem;
   }
 
   .link-button {
@@ -184,6 +224,7 @@
     display: inline;
     -webkit-tap-highlight-color: transparent;
     width: auto;
+    font-weight: 500;
   }
 
   .link-button:hover, .link-button:active {
@@ -193,16 +234,17 @@
 
   @media (max-width: 480px) {
     .login-container {
-      padding: 1.5rem;
-      margin: 0.5rem;
-      border-radius: 0;
-      box-shadow: none;
-      background: transparent;
+      padding: 2rem 1.5rem;
+      margin: 1rem;
+      border-radius: 12px;
     }
 
-    h1 {
-      font-size: 1.75rem;
-      margin-bottom: 1.5rem;
+    .logo-text, .logo-text-accent {
+      font-size: 2rem;
+    }
+
+    .tagline {
+      font-size: 0.9rem;
     }
 
     .form-group {
@@ -211,31 +253,22 @@
 
     input {
       padding: 0.875rem;
-      font-size: 16px; /* Prevents iOS zoom on focus */
+      font-size: 16px;
     }
 
     button {
       padding: 0.875rem;
-      font-size: 1rem;
-    }
-
-    .error-message {
-      padding: 0.875rem;
-      margin-bottom: 1.25rem;
-    }
-
-    .signup-link {
-      margin-top: 1.25rem;
     }
   }
 
   @media (max-height: 600px) {
     .login-container {
-      padding: 1rem;
+      padding: 1.5rem;
+      margin: 0.5rem auto;
     }
 
-    h1 {
-      margin-bottom: 1rem;
+    .logo-container {
+      margin-bottom: 1.5rem;
     }
 
     .form-group {
