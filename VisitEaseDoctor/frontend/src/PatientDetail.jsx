@@ -34,7 +34,7 @@ function PatientDetail({ patient, onBack }) {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const response = await fetch('http://localhost:8080/get-structured-data', {
+        const response = await fetch(`http://localhost:8080/get-structured-data?user_id=${patient.id}`, {
           credentials: 'include'
         });
         if (!response.ok) {
@@ -50,7 +50,7 @@ function PatientDetail({ patient, onBack }) {
     };
 
     fetchUserData();
-  }, []);
+  }, [patient.id]);
 
   // Scroll to top on mount
   useEffect(() => {
