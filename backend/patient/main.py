@@ -3,6 +3,7 @@ from healthapp.google_fit import get_flow, get_steps, get_heart_rate, get_calori
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from image_data.gemini_api import call_gemini_api
+from voice_chat import voice_chat_bp
 import firebase_admin
 from firebase_admin import credentials, auth, firestore, storage
 import json
@@ -31,6 +32,9 @@ app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
 app.config['SESSION_COOKIE_SECURE'] = False
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+
+# Register blueprints
+app.register_blueprint(voice_chat_bp, url_prefix='/api')
 
 # Initialize Firebase
 try:

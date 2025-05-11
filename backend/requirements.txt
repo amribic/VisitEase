@@ -5,3 +5,5 @@ requests
 flask-login
 werkzeug
 firebase-admin
+openai
+python-dotenv

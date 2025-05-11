@@ -1,6 +1,7 @@
 <script lang="ts">
     import GoogleFitForm from './GoogleFitForm.svelte';
     import NewInfoCheck from './NewInfoCheck.svelte';
+    import VoiceChatStep from './VoiceChatStep.svelte';
     import { v4 as uuidv4 } from 'uuid';
     
     // Steps data model
@@ -10,6 +11,7 @@
       { title: "Upload Latest Doctor's Letter", type: "doctorLetter" },
       { title: "Upload Latest Medical Information", type: "medicalInfo" },
       { title: "Connect Google Fit", type: "googleFit" },
+      { title: "Voice Chat with AI Assistant", type: "voiceChat" },
       { title: "All Done!", type: "done" }
     ];
   
@@ -20,6 +22,7 @@
     let doctorLetterUploaded = false;
     let medicalInfoUploaded = false;
     let googleFitConnected = false;
+    let voiceChatCompleted = false;
     let uploading = false;
     let labReportError = '';
     let doctorLetterError = '';
@@ -282,6 +285,11 @@
       googleFitConnected = true;
       handleContinue();
     }
+
+    function handleVoiceChatComplete() {
+        voiceChatCompleted = true;
+        currentStep++;
+    }
 </script>
   
 <div
@@ -377,6 +385,8 @@
             on:skip={handleGoogleFitSkip}
             on:continue={handleGoogleFitContinue}
           />
+        {:else if steps[currentStep].type === 'voiceChat'}
+          <VoiceChatStep on:complete={handleVoiceChatComplete} />
         {:else if steps[currentStep].type === 'done'}
           <div class="square-placeholder">
             <div>🎉 All Done! Welcome aboard.</div>
