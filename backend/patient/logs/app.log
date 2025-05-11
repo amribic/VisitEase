@@ -8,3 +8,4 @@
 2025-05-11 08:43:34,507 INFO: PDF conversion attempt for user: amarribic7@gmail.com [in /home/amar/cdtmhacks/VisitEase/backend/patient/main.py:463]
 2025-05-11 08:43:51,460 INFO: Successfully converted images to PDF for user gFcgFT80u1PfCddSoEudQ13eh1h1 [in /home/amar/cdtmhacks/VisitEase/backend/patient/main.py:484]
 2025-05-11 09:04:29,658 INFO: VisitEase startup [in /home/amar/cdtmhacks/VisitEase/backend/patient/main.py:53]
+2025-05-11 09:21:20,343 INFO: VisitEase startup [in /home/amar/cdtmhacks/VisitEase/backend/patient/main.py:53]

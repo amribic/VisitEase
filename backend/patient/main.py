@@ -61,7 +61,9 @@ CORS(app, supports_credentials=True, origins=[
     'http://localhost:5173',
     'http://localhost:3000',
     'https://visit-ease-qlflskvl9-amribics-projects.vercel.app',
-    'https://visit-ease.vercel.app'
+    'https://visit-ease.vercel.app',
+    'https://visit-ease-doctor.vercel.app',
+    'https://visitease.onrender.com'
 ])
 app.secret_key = 'your_secret_key'  # Change this to a secure secret key in production
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
