@@ -223,7 +223,6 @@ function PatientList() {
             className="patient-search-input"
           />
           <button className="filter-reset-btn">Reset filter</button>
-          <button className="more-filter-btn">More</button>
         </div>
         <div className="patient-table-wrapper">
           <table className="patient-table">

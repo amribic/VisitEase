@@ -83,25 +83,72 @@ function PatientDetail({ patient, onBack }) {
     window.scrollTo(0, 0);
   }, []);
 
-  function handleSend(e) {
+  // Auto-scroll to the latest chat message
+  useEffect(() => {
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages]);
+
+  async function handleSend(e) {
     e.preventDefault();
     if (!input.trim()) return;
-    setMessages(msgs => [
-      ...msgs,
-      { role: 'user', content: input }
-    ]);
-    // Simulate assistant reply
-    setTimeout(() => {
-      setMessages(msgs => [
-        ...msgs,
-        { role: 'assistant', content: 'This is a sample response from the assistant.' }
-      ]);
-    }, 800);
+
+    // Add the new user message to the chat
+    const newMessages = [...messages, { role: 'user', content: input }];
+    setMessages(newMessages);
     setInput('');
+
+    try {
+      const res = await fetch('http://localhost:8080/api/doctor-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: patient.id,
+          messages: newMessages
+        })
+      });
+      const data = await res.json();
+      if (data.response) {
+        setMessages(msgs => [...msgs, { role: 'assistant', content: data.response }]);
+      } else if (data.error) {
+        setMessages(msgs => [...msgs, { role: 'assistant', content: 'Error: ' + data.error }]);
+      }
+    } catch (err) {
+      setMessages(msgs => [...msgs, { role: 'assistant', content: 'Error: ' + err.message }]);
+    }
   }
 
   function Pill({ children }) {
     return <span className="patient-detail-pill">{children}</span>;
+  }
+
+  // Helper to render a limited number of pills (no '+N more' pill, max 5 words per pill)
+  function renderLimitedPills(arr, max = 3) {
+    if (!Array.isArray(arr)) return null;
+    const shown = arr.slice(0, max);
+    return (
+      <>
+        {shown.map((x, i) => {
+          // Truncate to 5 words max
+          const words = typeof x === 'string' ? x.split(' ') : [];
+          const shortText = words.length > 5 ? words.slice(0, 5).join(' ') + ' ...' : x;
+          return <Pill key={i}>{shortText}</Pill>;
+        })}
+      </>
+    );
+  }
+
+  // Helper to render message content with **bold**
+  function renderMessageWithBold(text) {
+    if (typeof text !== 'string') return text;
+    const parts = text.split(/(\*\*[^*]+\*\*)/g);
+    return parts.map((part, i) => {
+      if (/^\*\*[^*]+\*\*$/.test(part)) {
+        return <strong key={i}>{part.slice(2, -2)}</strong>;
+      }
+      return <span key={i}>{part}</span>;
+    });
   }
 
   if (loading) {
@@ -183,15 +230,15 @@ function PatientDetail({ patient, onBack }) {
             <div className="patient-detail-card">
               <div className="patient-detail-card-title patient-detail-card-title-lg">Clinical Findings</div>
               <div style={{ fontWeight: 600, marginBottom: 4 }}>Location</div>
-              <div style={{ marginBottom: 12 }}>{displayData.pain.location.map((x, i) => <Pill key={i}>{x}</Pill>)}</div>
+              <div className="patient-detail-pill-list">{renderLimitedPills(displayData.pain.location, 3)}</div>
               <div style={{ fontWeight: 600, marginBottom: 4 }}>Anamnesis</div>
-              <div style={{ marginBottom: 12 }}>{displayData.pain.duration.map((x, i) => <Pill key={i}>{x}</Pill>)}</div>
+              <div className="patient-detail-pill-list">{renderLimitedPills(displayData.pain.duration, 3)}</div>
               <div style={{ fontWeight: 600, marginBottom: 4 }}>Assessment</div>
-              <div>{displayData.pain.trigger.map((x, i) => <Pill key={i}>{x}</Pill>)}</div>
+              <div className="patient-detail-pill-list">{renderLimitedPills(displayData.pain.trigger, 3)}</div>
             </div>
             <div className="patient-detail-card">
               <div className="patient-detail-card-title">Treatment Plan</div>
-              {displayData.other.map((x, i) => <Pill key={i}>{x}</Pill>)}
+              <div className="patient-detail-pill-list">{renderLimitedPills(displayData.other, 3)}</div>
             </div>
           </div>
           {/* Right: Chat */}
@@ -202,12 +249,15 @@ function PatientDetail({ patient, onBack }) {
                   key={idx}
                   className={`patient-detail-chat-message ${msg.role}`}
                 >
-                  {msg.content}
+                  {renderMessageWithBold(msg.content)}
                 </div>
               ))}
               <div ref={chatEndRef} />
             </div>
-            <form className="patient-detail-chat-input-row" onSubmit={handleSend}>
+            <form
+              className="patient-detail-chat-input-row"
+              onSubmit={handleSend}
+            >
               <input
                 className="patient-detail-chat-input"
                 type="text"
@@ -215,7 +265,12 @@ function PatientDetail({ patient, onBack }) {
                 value={input}
                 onChange={e => setInput(e.target.value)}
               />
-              <button className="patient-detail-chat-send-btn" type="submit">Send</button>
+              <button
+                className="patient-detail-chat-send-btn"
+                type="submit"
+              >
+                Send
+              </button>
             </form>
           </div>
           {/* Bottom: Fixed grid of key info cards */}

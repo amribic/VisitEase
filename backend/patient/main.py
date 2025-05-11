@@ -20,6 +20,8 @@ from threading import Lock
 import asyncio
 import wave
 from flask import make_response
+import openai
+from dotenv import load_dotenv
 
 conversations = {}
 conversations_lock = Lock()
@@ -448,6 +450,23 @@ def get_structured_data():
     user_id = request.args.get('user_id')
     return model_user_data(user_id)
 
+def model_user_data(uuid: str):
+
+    user_ref = db.collection('users').document(uuid)
+
+    sub_collections = user_ref.collections()
+
+    user_model_dict = defaultdict()
+
+    for collection in sub_collections:
+        docs = collection.order_by(field_path="created_at", direction=firestore.Query.DESCENDING).limit(1)
+        for doc in docs.stream():
+            doc_dict = doc.to_dict()
+            doc_dict['created_at'] = datetime.datetime.fromtimestamp(doc_dict['created_at'].timestamp()).strftime('%d-%m-%Y')
+            user_model_dict[collection.id] = doc_dict
+
+    return user_model_dict
+
 @app.route('/get-pdf-by-type-for-user', methods=["GET"])
 def get_user_type_pdf():
     user_id = request.args.get('user_id')
@@ -506,6 +525,55 @@ def get_user_basic_profile():
             'created_at': ''
         })
 
+# --- DOCTOR CHAT ENDPOINT ---
+@app.route('/api/doctor-chat', methods=['POST'])
+def doctor_chat():
+    try:
+        load_dotenv()
+        api_key = os.getenv('OPENAI_API_KEY')
+        if not api_key:
+            return jsonify({'error': 'OpenAI API key not set'}), 500
+        data = request.get_json()
+        if not data or 'user_id' not in data:
+            return jsonify({'error': 'Missing user_id'}), 400
+        user_id = data['user_id']
+        user_context = model_user_data(user_id)
+
+        # Always prepend a system prompt
+        system_prompt = {"role": "system", "content": "You are GPT-4o, a highly specialized clinical‐decision support assistant, directly integrated into the workflow of a board-certified physician. Your purpose is to help the doctor work faster, safer, and more confidently.\nKnowledge & Evidence\nAlways draw on the latest peer-reviewed literature, clinical guidelines (e.g. ACCF/AHA, NICE, WHO, UpToDate), and standard textbooks.\nWhen you state data (e.g. sensitivities, drug dosages, study outcomes), cite your source and year (e.g. \"per 2024 ACC/AHA Guideline\").\nIf you're uncertain or the question lies outside established guidelines, ask a clarifying question or suggest consulting a subspecialist.\nTone & Style\nUse concise, precise language and standard medical terminology.\nWhen communicating patient-facing language or lay explanations, translate jargon into clear, empathic phrasing.\nMaintain professional neutrality—avoid jargon overload, value‐judgments, or sensationalism.\nWorkflow Integration\nSummarize key findings in bullet points or tables (e.g. differential diagnoses, drug dosing, management algorithms).\nFlag \"high–priority\" safety concerns (e.g. drug interactions, red-flag symptoms) at the top of your response.\nWhen requested, generate templated notes (SOAP, H&P, discharge summaries) that adhere to common EHR formatting.\nInteraction Guidelines\nIf the doctor's query is ambiguous, ask one focused clarifying question rather than guessing.\nOffer to drill down into epidemiology, pathophysiology, diagnostics, therapeutics, or patient education as needed.\nBe ready to generate visual aids (charts, algorithm diagrams) on request, formatted for quick review.\nYou exist to make each clinical encounter safer, more efficient, and more evidence‐based—think like an attending physician's most trusted senior resident. Keep the responses short and concise. Only output text and not any weird formatting."}
+
+        # If frontend sends a full messages array, use it (prepend context as system message)
+        if 'messages' in data:
+            messages = data['messages']
+            # Prepend a system message with patient context if not already present
+            if not messages or messages[0].get('role') != 'system' or messages[0].get('content') != system_prompt['content']:
+                messages = [system_prompt, {"role": "system", "content": f"Patient context: {json.dumps(user_context, ensure_ascii=False)}"}] + messages
+            elif len(messages) == 1 or messages[1].get('role') != 'system' or not messages[1].get('content', '').startswith('Patient context:'):
+                messages = [messages[0], {"role": "system", "content": f"Patient context: {json.dumps(user_context, ensure_ascii=False)}"}] + messages[1:]
+        else:
+            # Otherwise, build a single-turn message
+            if 'message' not in data:
+                return jsonify({'error': 'Missing message'}), 400
+            message = data['message']
+            messages = [
+                system_prompt,
+                {"role": "system", "content": f"Patient context: {json.dumps(user_context, ensure_ascii=False)}"},
+                {"role": "user", "content": message}
+            ]
+
+        import openai
+        client = openai.OpenAI(api_key=api_key)
+        try:
+            response = client.chat.completions.create(
+                model="gpt-4o",
+                messages=messages
+            )
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+        return jsonify({'response': response.choices[0].message.content})
+    except Exception as e:
+        print(f"Error in doctor_chat endpoint: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(port=8080, debug=True, use_reloader=False)
