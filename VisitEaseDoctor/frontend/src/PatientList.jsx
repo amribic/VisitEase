@@ -191,7 +191,10 @@ function PatientList() {
   if (loading) {
     return (
       <div className="patient-app-bg">
-        <div>Loading...</div>
+        <div className="login-loading-spinner">
+          <div className="login-spinner" />
+          <div style={{marginTop: '1.2rem', color: '#21756c', fontWeight: 600, fontSize: '1.15rem'}}>Loading...</div>
+        </div>
       </div>
     );
   }

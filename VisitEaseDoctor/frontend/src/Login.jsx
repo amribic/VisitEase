@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import './Login.css';
 
 function Login({ onLogin }) {
   const [username, setUsername] = useState('');
@@ -11,31 +12,35 @@ function Login({ onLogin }) {
   };
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: 'white' }}>
-      <div style={{ padding: '2rem', backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-        <h2>Login</h2>
-        <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: '1rem' }}>
+    <div className="login-bg">
+      <div className="login-card">
+        <div className="login-header">
+          <h2 className="login-title">Login</h2>
+        </div>
+        <form onSubmit={handleSubmit} className="login-form">
+          <div className="login-field">
             <input
               type="text"
               placeholder="Username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
-              style={{ width: '100%', padding: '0.5rem', border: '1px solid #ddd', borderRadius: '4px' }}
+              className="login-input"
+              autoComplete="off"
             />
           </div>
-          <div style={{ marginBottom: '1rem' }}>
+          <div className="login-field">
             <input
               type="password"
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              style={{ width: '100%', padding: '0.5rem', border: '1px solid #ddd', borderRadius: '4px' }}
+              className="login-input"
+              autoComplete="off"
             />
           </div>
-          <button type="submit" style={{ width: '100%', padding: '0.5rem', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Login</button>
+          <button type="submit" className="login-btn">Login</button>
         </form>
       </div>
     </div>
