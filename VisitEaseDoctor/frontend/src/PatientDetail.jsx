@@ -187,24 +187,37 @@ function PatientDetail({ patient, onBack }) {
               <button className="patient-detail-chat-send-btn" type="submit">Send</button>
             </form>
           </div>
-          {/* Bottom: Full-width row of cards */}
+          {/* Bottom: Fixed grid of key info cards */}
           <div className="patient-detail-bottom-row">
+            {/* Insurance Information Card */}
+            <div className="patient-detail-card" style={{ minWidth: 220, flex: 1, margin: 0 }}>
+              <div className="patient-detail-card-title">Insurance Information</div>
+              <div><b>Provider:</b> {insuranceCard.insuranceProvider || 'N/A'}</div>
+              <div><b>Number:</b> {insuranceCard.insuranceNumber || 'N/A'}</div>
+            </div>
+            {/* Medication Plan Card */}
             <div className="patient-detail-card" style={{ minWidth: 220, flex: 1, margin: 0 }}>
               <div className="patient-detail-card-title">Medication Plan</div>
-              {medicationPlan.medication?.map((med, i) => (
-                <Pill key={i}>{med.medicationName} - {med.dosage}</Pill>
-              ))}
+              {Array.isArray(medicationPlan.medication) && medicationPlan.medication.length > 0 ? (
+                <div>
+                  <b>Name:</b> {medicationPlan.medication[0].medicationName || 'N/A'}<br />
+                  <b>Dosage:</b> {medicationPlan.medication[0].dosage || 'N/A'}
+                </div>
+              ) : (
+                <div>N/A</div>
+              )}
             </div>
+            {/* Lab Results Card */}
             <div className="patient-detail-card" style={{ minWidth: 220, flex: 1, margin: 0 }}>
               <div className="patient-detail-card-title">Lab Results</div>
-              {labData.map((lab, i) => (
-                <Pill key={i}>{lab.testName}: {lab.value} {lab.unit}</Pill>
-              ))}
-            </div>
-            <div className="patient-detail-card" style={{ minWidth: 220, flex: 1, margin: 0 }}>
-              <div className="patient-detail-card-title">Insurance Info</div>
-              <Pill>Provider: {insuranceCard.insuranceProvider}</Pill>
-              <Pill>Number: {insuranceCard.insuranceNumber}</Pill>
+              {Array.isArray(labData) && labData.length > 0 ? (
+                <div>
+                  <b>Test:</b> {labData[0].testName || 'N/A'}<br />
+                  <b>Value:</b> {labData[0].value || 'N/A'} {labData[0].unit || ''}
+                </div>
+              ) : (
+                <div>N/A</div>
+              )}
             </div>
           </div>
         </div>
