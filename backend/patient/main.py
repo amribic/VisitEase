@@ -22,6 +22,35 @@ import wave
 from flask import make_response
 import openai
 from dotenv import load_dotenv
+import logging
+from logging.handlers import RotatingFileHandler
+import sys
+
+# Configure logging
+def setup_logger(app):
+    # Create logs directory if it doesn't exist
+    if not os.path.exists('logs'):
+        os.makedirs('logs')
+    
+    # Set up file handler
+    file_handler = RotatingFileHandler('logs/app.log', maxBytes=10240, backupCount=10)
+    file_handler.setFormatter(logging.Formatter(
+        '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+    ))
+    file_handler.setLevel(logging.INFO)
+    
+    # Set up console handler
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setFormatter(logging.Formatter(
+        '%(asctime)s %(levelname)s: %(message)s'
+    ))
+    console_handler.setLevel(logging.INFO)
+    
+    # Configure app logger
+    app.logger.addHandler(file_handler)
+    app.logger.addHandler(console_handler)
+    app.logger.setLevel(logging.INFO)
+    app.logger.info('VisitEase startup')
 
 conversations = {}
 conversations_lock = Lock()
@@ -39,6 +68,9 @@ app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
 app.config['SESSION_COOKIE_SECURE'] = True  # Enable secure cookies for HTTPS
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'None'  # Allow cross-site cookies
+
+# Setup logging
+setup_logger(app)
 
 # Register blueprints
 app.register_blueprint(voice_chat_bp, url_prefix='/api')
@@ -115,6 +147,7 @@ def index():
 
 @app.route('/login', methods=['POST'])
 def login():
+    app.logger.info(f"Login attempt for email: {request.form.get('email')}")
     email = request.form.get('email')
     password = request.form.get('password')
     
@@ -127,14 +160,18 @@ def login():
         session['email'] = email
         session.modified = True
         
+        app.logger.info(f"Successful login for user: {email}")
         return jsonify({'success': True, 'message': 'Login successful'})
     except auth.UserNotFoundError:
+        app.logger.warning(f"Failed login attempt - User not found: {email}")
         return jsonify({'success': False, 'message': 'User not found'}), 401
     except Exception as e:
+        app.logger.error(f"Login error: {str(e)}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.route('/signup', methods=['POST'])
 def signup():
+    app.logger.info(f"Signup attempt for email: {request.form.get('email')}")
     email = request.form.get('email')
     password = request.form.get('password')
     full_name = request.form.get('fullName')
@@ -159,35 +196,27 @@ def signup():
         session['user_id'] = user.uid
         session['email'] = email
         session.modified = True
-        print('test1')
+        
+        app.logger.info(f"Successful signup for user: {email}")
+        
         try:
-            # Get a reference to the default storage bucket associated with your project
-            print('test')
             bucket = storage.bucket(name='avi-cdtm-hack-team-1613.firebasestorage.app')
-            print(f"Accessed bucket: {bucket.name}")
+            app.logger.info(f"Accessed bucket: {bucket.name}")
 
-            # --- Create the "Folder" (by creating an empty object) ---
-            # Cloud Storage uses a flat namespace. We simulate folders by creating
-            # objects with names containing '/'. Creating an empty object like this
-            # makes the folder appear in the console.
-
-            # Get a blob (object) reference with the desired "folder" name
             blob = bucket.blob(f'users/{user.uid}/user-info')
-
-            # Upload an empty string (or empty bytes) to create the object.
-            # This is how you make the folder visible without putting a file inside yet.
             blob.upload_from_string('')
-
-            print(f"Successfully created 'folder' (empty object) named: users/{user.uid}/image-data")
+            app.logger.info(f"Created user folder for: {user.uid}")
 
         except Exception as e:
-            print(f"An error occurred while accessing storage or creating the folder: {e}")
+            app.logger.error(f"Error creating user storage: {str(e)}")
 
         return jsonify({'success': True, 'message': 'Signup successful'})
         
     except auth.EmailAlreadyExistsError:
+        app.logger.warning(f"Failed signup - Email already exists: {email}")
         return jsonify({'success': False, 'message': 'Email already exists'}), 400
     except Exception as e:
+        app.logger.error(f"Signup error: {str(e)}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.route('/logout')
@@ -353,16 +382,20 @@ def fitness():
 @app.route('/upload-image', methods=['POST'])
 @login_required
 def upload_image():
+    app.logger.info(f"Image upload attempt for user: {current_user.email}")
     image_type = request.args.get('image_type')
     uuid = request.args.get('uuid')
     file = request.files.get('image')
+    
     if file and file.filename.lower().endswith(('.jpg', '.jpeg', '.png')):
         user_id = current_user.id
         bucket = storage.bucket(name='avi-cdtm-hack-team-1613.firebasestorage.app')
         blob = bucket.blob(f'users/{user_id}/image-data/{image_type}/{uuid}/{file.filename}')
         blob.upload_from_file(file, content_type=file.content_type)
+        app.logger.info(f"Successfully uploaded image for user {user_id}: {file.filename}")
         return jsonify({'success': True, 'message': 'Image uploaded successfully'})
     
+    app.logger.warning(f"Invalid image format attempted by user {current_user.email}")
     return jsonify({'success': False, 'message': 'Invalid image format'}), 400
 
 def download_images_from_firebase(user_id, image_type, usid):
@@ -427,27 +460,35 @@ def convert_images_to_pdf_and_upload(image_streams, user_id, image_type, uuid):
 @app.route('/convert-images-to-pdf', methods=['POST'])
 @login_required
 def convert_images_to_pdf():
+    app.logger.info(f"PDF conversion attempt for user: {current_user.email}")
     image_type = request.form.get('image_type')
     uuid = request.form.get('uuid')
-    print(image_type, uuid)
+    
     if not image_type or not uuid:
+        app.logger.warning(f"Missing required fields for user {current_user.email}")
         return jsonify({'success': False, 'message': 'Missing required fields'}), 400
 
     user_id = current_user.id
-    print(user_id)
     
-    # Download all images for this upload
-    image_streams = download_images_from_firebase(user_id, image_type, uuid)
-    if not image_streams:
-        return jsonify({'success': False, 'message': 'No images found in Firebase'}), 404
+    try:
+        # Download all images for this upload
+        image_streams = download_images_from_firebase(user_id, image_type, uuid)
+        if not image_streams:
+            app.logger.warning(f"No images found for user {user_id}")
+            return jsonify({'success': False, 'message': 'No images found in Firebase'}), 404
 
-    # Process all images at once
-    pdf_url = convert_images_to_pdf_and_upload(image_streams, user_id, image_type, uuid)
-    
-    if pdf_url:
-        return jsonify({'success': True, 'pdf_url': pdf_url})
-    else:
-        return jsonify({'success': False, 'message': 'PDF generation failed'}), 500
+        # Process all images at once
+        pdf_url = convert_images_to_pdf_and_upload(image_streams, user_id, image_type, uuid)
+        
+        if pdf_url:
+            app.logger.info(f"Successfully converted images to PDF for user {user_id}")
+            return jsonify({'success': True, 'pdf_url': pdf_url})
+        else:
+            app.logger.error(f"PDF generation failed for user {user_id}")
+            return jsonify({'success': False, 'message': 'PDF generation failed'}), 500
+    except Exception as e:
+        app.logger.error(f"Error in convert_images_to_pdf: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 
 @app.route('/get-structured-data', methods=["GET"])
