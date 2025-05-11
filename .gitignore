@@ -3,6 +3,4 @@ backend/.venv/
 backend/__pycache__/
 backend/image-data/pdfs
 __pycache__/
-client_secret.json
-avi-cdtm-hack-team-1613-firebase-adminsdk-fbsvc-14ccd2ea46.json
 .env

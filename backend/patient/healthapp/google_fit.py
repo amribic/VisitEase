@@ -1,34 +1,45 @@
 import os
+import json
+from flask import session, request
+from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
+from googleapiclient.discovery import build
+from dotenv import load_dotenv
 import requests
 import datetime
 from firebase_config import db
 from firebase_admin import firestore
 
-os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+# Load environment variables
+load_dotenv()
+
+# Google Fit API configuration
+CLIENT_CONFIG = {
+    "web": {
+        "client_id": os.getenv('OAUTH_CLIENT_ID'),
+        "client_secret": os.getenv('OAUTH_CLIENT_SECRET'),
+        "redirect_uris": [os.getenv('OAUTH_REDIRECT_URI')],
+        "auth_uri": os.getenv('GOOGLE_AUTH_URI'),
+        "token_uri": os.getenv('GOOGLE_TOKEN_URI'),
+        "auth_provider_x509_cert_url": os.getenv('GOOGLE_AUTH_PROVIDER_CERT_URL'),
+        "client_x509_cert_url": os.getenv('GOOGLE_CLIENT_CERT_URL')
+    }
+}
 
 # Define scopes in order of importance
 SCOPES = [
     'https://www.googleapis.com/auth/fitness.activity.read',  # Most important - for steps and distance
     'https://www.googleapis.com/auth/fitness.heart_rate.read',  # Optional - for heart rate
-    'https://www.googleapis.com/auth/fitness.body.read'  # Optional - for body metrics
+    'https://www.googleapis.com/auth/fitness.body.read',  # Optional - for body metrics
+    'https://www.googleapis.com/auth/fitness.sleep.read'  # Optional - for sleep data
 ]
-REDIRECT_URI = 'http://localhost:8080/oauth2callback'
-CLIENT_SECRETS_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname((os.path.dirname(__file__))))), 'client_secret.json')
-
 
 def get_flow():
-    try:
-        if not os.path.exists(CLIENT_SECRETS_FILE):
-            raise FileNotFoundError(f"client_secret.json not found at {CLIENT_SECRETS_FILE}")
-        return Flow.from_client_secrets_file(
-            CLIENT_SECRETS_FILE,
-            scopes=SCOPES,
-            redirect_uri=REDIRECT_URI
-        )
-    except Exception as e:
-        print(f"Error in get_flow: {e}")
-        raise
+    return Flow.from_client_config(
+        CLIENT_CONFIG,
+        scopes=SCOPES,
+        redirect_uri=os.getenv('GOOGLE_FIT_REDIRECT_URI')
+    )
 
 
 def get_fitness_data(access_token, data_type):
