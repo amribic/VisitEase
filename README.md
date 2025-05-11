@@ -8,18 +8,19 @@
 ## Links
 - **Demo (Patient-Side)**: [https://visit-ease.vercel.app/](https://visit-ease.vercel.app/)
 - **Demo (Medical-Staff-Side)**: [https://visit-ease-doctor.vercel.app/](https://visit-ease-doctor.vercel.app/)
-(We only have limited hosting resources for free, so if something happens to not work below is an instruction on how to run everything on a local machine)
+
+> Note: Due to limited hosting resources, the demo links may occasionally be unavailable. Below are instructions for running the application locally.
 
 ## One-Sentence Pitch
-A structurization engine for complex, incomplete and variable data.
+A structurization engine for complex, incomplete, and variable data.
 
 ## What Is VisitEase?
 
-Planning to visit a healthcare professional? In most cases patients forget to bring relevant medical records like medical history, recent lab results and specific medication names. This drastically increases complexity for doctors to effectively assist and provide the best care possible. VisitEase is the solution - it is about enabling better healthcare for patients of all technical backgrounds by allowing them to easily and dynamically upload snapshots of their data. No more forgetting documents, confusion and unnecessary waiting. As a doctor, you also profit from being able to view a patient's data in a structured dashboard with dynamic interactions powered by LLMs. Through technical innovation, VisitEase shapes the future of patient visits and acts as a cornerstone in medical tech.
+Planning to visit a healthcare professional? Patients often forget to bring relevant medical records such as medical history, recent lab results, and specific medication names. This significantly increases the complexity for doctors to provide effective care. VisitEase solves this problem by enabling better healthcare for patients of all technical backgrounds through easy and dynamic data uploads. No more forgotten documents, confusion, or unnecessary waiting. Doctors benefit from a structured dashboard with dynamic interactions powered by LLMs, allowing them to view patient data efficiently. Through technical innovation, VisitEase is shaping the future of patient visits and establishing itself as a cornerstone in medical technology.
 
 ## How We Built It
 
-The infrastructure of VisitEase can be divided into a front- and backend:
+VisitEase's infrastructure consists of two main components:
 
 ### Backend
 - Flask server handling multiple POST and GET requests
@@ -37,7 +38,7 @@ The infrastructure of VisitEase can be divided into a front- and backend:
 ## Challenges Faced
 
 1. **Platform Decision**: After consulting with the avi team, we decided to build a responsive web app.
-2. **Audio Integration**: Implementing a talking agent was challenging due to the complexity of sharing audio between frontend and backend. We solved this by:
+2. **Audio Integration**: Implementing a talking agent presented significant challenges due to the complexity of sharing audio between frontend and backend. We overcame this by:
    - Using OpenAI API for audio processing
    - Generating text responses
    - Converting responses to audio using Gemini text-to-speech API
@@ -45,7 +46,7 @@ The infrastructure of VisitEase can be divided into a front- and backend:
 ## Competition Categories
 
 ### Celonis - Best use of AI to improve processes
-VisitEase employs multiple AI models:
+VisitEase leverages multiple AI models:
 - Basic text generation
 - PDF analysis using Gemini-2.0-flash
 - Complex voice agent using OpenAI API and Gemini speech-to-text API
@@ -122,7 +123,7 @@ We took a significant creative risk by developing a working speaking agent to en
 
 3. Create a `.env` file:
    ```
-   VITE_API_URL=VITE_API_URL=http://localhost:8080
+   VITE_API_URL=http://localhost:8080
    ```
 
 4. Start the development server:
