@@ -4,3 +4,4 @@ backend/__pycache__/
 backend/image-data/pdfs
 __pycache__/
 .env
+node_modules/
