@@ -474,5 +474,27 @@ def get_user_ids():
     user_docs = db.collection('users').stream()
     return [doc.id for doc in user_docs]
 
+@app.route('/get-user-basic-profile', methods=["GET"])
+def get_user_basic_profile():
+    user_id = request.args.get('user_id')
+    doc = db.collection('users').document(user_id).get()
+    if doc.exists:
+        data = doc.to_dict()
+        return jsonify({
+            'user_id': user_id,
+            'full_name': data.get('full_name', 'Unknown Patient'),
+            'date_of_birth': data.get('date_of_birth', ''),
+            'email': data.get('email', ''),
+            'created_at': str(data.get('created_at', ''))
+        })
+    else:
+        return jsonify({
+            'user_id': user_id,
+            'full_name': 'Unknown Patient',
+            'date_of_birth': '',
+            'email': '',
+            'created_at': ''
+        })
+
 if __name__ == '__main__':
     app.run(port=8080, debug=True, use_reloader=False)

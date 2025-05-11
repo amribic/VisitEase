@@ -64,43 +64,78 @@ function PatientList() {
         console.log('Starting to fetch structured data for each user...');
         const patientPromises = userIds.map(async (userId) => {
           try {
-            console.log(`Fetching data for user ${userId}...`);
+            // Try to fetch structured data first
             const dataResponse = await fetch(`http://localhost:8080/get-structured-data?user_id=${userId}`);
-            
-            if (!dataResponse.ok) {
-              const errorText = await dataResponse.text();
-              console.error(`Failed to fetch data for user ${userId}:`, {
-                status: dataResponse.status,
-                statusText: dataResponse.statusText,
-                error: errorText
-              });
-              failedUsers.push({ id: userId, error: `HTTP ${dataResponse.status}: ${dataResponse.statusText}` });
-              return null;
+            let userData = null;
+            let insuranceCard = {};
+            let doctorLetter = {};
+            let name = '';
+            let age = 'N/A';
+            let gender = 'N/A';
+            let lastVisit = 'N/A';
+            let appointmentTime = 'N/A';
+            let incomplete = false;
+            let email = '';
+            let createdAt = '';
+
+            if (dataResponse.ok) {
+              userData = await dataResponse.json();
+              insuranceCard = userData.insuranceCard || {};
+              doctorLetter = userData.doctorLetter || {};
+              if (insuranceCard.name && insuranceCard.name.trim() !== '') {
+                name = insuranceCard.name;
+              }
+              age = calculateAge(insuranceCard.birthDate) || 'N/A';
+              gender = insuranceCard.gender || 'N/A';
+              lastVisit = formatDate(doctorLetter.created_at) || 'N/A';
             }
 
-            const userData = await dataResponse.json();
-            console.log(`Received data for user ${userId}:`, userData);
-            
-            // Extract relevant information from userData
-            const insuranceCard = userData.insuranceCard || {};
-            const doctorLetter = userData.doctorLetter || {};
-            
-            const processedData = {
-              id: userId,
-              name: insuranceCard.name || 'Unknown Patient',
-              age: calculateAge(insuranceCard.birthDate) || 'N/A',
-              gender: insuranceCard.gender || 'N/A',
-              lastVisit: formatDate(doctorLetter.created_at) || 'N/A',
-              appointmentTime: 'N/A', // This field is not available in the backend data
-              data: userData // Store the full data for PatientDetail
-            };
+            // If no insurance name, fetch registration info
+            if (!name || name.trim() === '') {
+              const profileResponse = await fetch(`http://localhost:8080/get-user-basic-profile?user_id=${userId}`);
+              if (profileResponse.ok) {
+                const profile = await profileResponse.json();
+                if (profile.full_name && profile.full_name.trim() !== '') {
+                  name = profile.full_name;
+                  age = calculateAge(profile.date_of_birth) || 'N/A';
+                  email = profile.email || '';
+                  createdAt = profile.created_at || '';
+                  incomplete = true;
+                }
+              }
+            }
 
-            console.log(`Processed data for user ${userId}:`, processedData);
-            return processedData;
+            // If still no name, fallback
+            if (!name || name.trim() === '') name = 'Unknown Patient';
+
+            return {
+              id: userId,
+              name,
+              age,
+              gender,
+              lastVisit,
+              appointmentTime,
+              email,
+              createdAt,
+              data: userData,
+              incomplete
+            };
           } catch (err) {
+            // If both fetches fail, return a placeholder patient
             console.error(`Error processing user ${userId}:`, err);
             failedUsers.push({ id: userId, error: err.message });
-            return null;
+            return {
+              id: userId,
+              name: 'Unknown Patient',
+              age: 'N/A',
+              gender: 'N/A',
+              lastVisit: 'N/A',
+              appointmentTime: 'N/A',
+              email: '',
+              createdAt: '',
+              data: null,
+              incomplete: true
+            };
           }
         });
 
