@@ -36,7 +36,8 @@
                         headers: {
                             'Content-Type': 'application/json',
                         },
-                        body: JSON.stringify({ message: 'start' })
+                        body: JSON.stringify({ message: 'start' }),
+                        credentials: 'include'
                     })
                     .then(response => response.json())
                     .then(data => {
@@ -60,7 +61,8 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ message: 'start' })
+                    body: JSON.stringify({ message: 'start' }),
+                    credentials: 'include'
                 })
                 .then(response => response.json())
                 .then(data => {
@@ -148,7 +150,8 @@
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ text })
+                body: JSON.stringify({ text }),
+                credentials: 'include'
             });
 
             if (!response.ok) {
@@ -241,7 +244,8 @@
 
             const response = await fetch(`${API_URL}/api/transcribe`, {
                 method: 'POST',
-                body: formData
+                body: formData,
+                credentials: 'include'
             });
 
             const data = await response.json();
@@ -287,7 +291,8 @@
                 },
                 body: JSON.stringify({
                     message: userInput
-                })
+                }),
+                credentials: 'include'
             });
 
             if (!response.ok) {
