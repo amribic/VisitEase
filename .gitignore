@@ -1,5 +1,6 @@
 .DS_Store
 backend/.venv/
+__pycache__/
 backend/__pycache__/
 backend/image-data/pdfs
 __pycache__/
