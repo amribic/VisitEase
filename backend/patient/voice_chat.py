@@ -1,12 +1,32 @@
-from flask import Blueprint, request, jsonify, send_file
+from collections import defaultdict
+from flask import Blueprint, request, jsonify, send_file, session
 import openai
 import os
+import json
+import datetime
 from dotenv import load_dotenv
 from werkzeug.utils import secure_filename
 import tempfile
 from google.cloud import texttospeech
 from google.oauth2 import service_account
+import firebase_admin
+from firebase_admin import firestore, credentials
 import io
+
+# Initialize Firebase
+try:
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.abspath(os.path.join(current_dir, '../..'))
+    cred_path = os.path.join(project_root, 'avi-cdtm-hack-team-1613-firebase-adminsdk-fbsvc-14ccd2ea46.json')
+    cred = credentials.Certificate(cred_path)
+    firebase_admin.initialize_app(cred, {
+        'storageBucket': 'avi-cdtm-hack-team-1613.firebasestorage.app'
+    })
+except ValueError:
+    pass
+
+# Initialize Firestore client
+db = firestore.client()
 
 # Load environment variables
 load_dotenv()
@@ -30,6 +50,264 @@ tts_client = texttospeech.TextToSpeechClient(credentials=credentials)
 
 voice_chat_bp = Blueprint('voice_chat', __name__)
 
+SCHEMA_DOCTOR_LETTER = {
+    "reasonForReferral": {
+        "type": "string",
+        "description": "The reason for the patient's referral."
+    },
+    "anamnesis": {
+        "type": "array",
+        "items": {
+            "type": "string"
+        },
+        "description": "A list of anamnesis statements."
+    },
+    "clinicalFindings": {
+        "type": "array",
+        "description": "Clinical findings. This is an array of strings that contain information about the patient's clinical findings.",
+        "items": {
+            "type": "string"
+        },
+    },
+    "assessment": {
+        "type": "array",
+        "items": {
+            "type": "string"
+        },
+        "description": "A list of assessment statements."
+    },
+    "plan": {
+        "type": "array",
+        "items": {
+            "type": "string"
+        },
+        "description": "A list of plan statements."
+    },
+    "medication": {
+        "type": "array",
+        "items": {
+            "type": "object",
+            "properties": {
+                "substance": {
+                    "type": ["string", "null"]
+                },
+                "medicationName": {
+                    "type": ["string", "null"]
+                },
+                "dosage": {
+                    "type": ["string", "null"]
+                },
+                "pillForm": {
+                    "type": ["string", "null"]
+                },
+                "numberMorning": {
+                    "type": ["number", "null"]
+                },
+                "numberNoon": {
+                    "type": ["number", "null"]
+                },
+                "numberEvening": {
+                    "type": ["number", "null"]
+                },
+                "numberNight": {
+                    "type": ["number", "null"]
+                },
+                "unit": {
+                    "type": ["string", "null"]
+                },
+                "notes": {
+                    "type": ["string", "null"]
+                }
+            },
+            "required": [
+                "substance",
+                "medicationName",
+                "dosage",
+                "pillForm",
+                "numberMorning",
+                "numberNoon",
+                "numberEvening",
+                "numberNight",
+                "unit",
+                "notes"
+            ]
+        },
+        "description": "Medication plan details."
+    },
+    "labData": {
+        "type": "array",
+        "items": {
+            "type": "object",
+            "properties": {
+                "unit": {
+                    "type": ["string", "null"]
+                },
+                "value": {
+                    "type": ["number", "null"]
+                },
+                "referenceRange": {
+                    "type": ["string", "null"]
+                },
+                "testName": {
+                    "type": ["string", "null"]
+                }
+            },
+            "required": [
+                "unit",
+                "value",
+                "referenceRange",
+                "testName"
+            ]
+        },
+        "description": "A list of lab data entries."
+    },
+    "required": [
+        "reasonForReferral",
+        "anamnesis",
+        "clinicalFindings",
+        "assessment",
+        "plan",
+        "medication",
+        "labData"
+    ]
+}
+
+SCHEMA_MEDICATION_PLAN = {
+    "medication": {
+        "type": "array",
+        "items": {
+            "type": "object",
+            "properties": {
+                "substance": {
+                    "type": ["string", "null"]
+                },
+                "medicationName": {
+                    "type": ["string", "null"]
+                },
+                "dosage": {
+                    "type": ["string", "null"]
+                },
+                "pillForm": {
+                    "type": ["string", "null"]
+                },
+                "numberMorning": {
+                    "type": ["number", "null"]
+                },
+                "numberNoon": {
+                    "type": ["number", "null"]
+                },
+                "numberEvening": {
+                    "type": ["number", "null"]
+                },
+                "numberNight": {
+                    "type": ["number", "null"]
+                },
+                "unit": {
+                    "type": ["string", "null"]
+                },
+                "notes": {
+                    "type": ["string", "null"]
+                }
+            },
+            "required": [
+                "substance",
+                "medicationName",
+                "dosage",
+                "pillForm",
+                "numberMorning",
+                "numberNoon",
+                "numberEvening",
+                "numberNight",
+                "unit",
+                "notes"
+            ]
+        },
+        "description": "Medication plan details."
+    }
+}
+
+SCHEMA_LAB_DATA = {
+    "labData": {
+        "type": "array",
+        "items": {
+            "type": "object",
+            "properties": {
+                "unit": {
+                    "type": ["string", "null"]
+                },
+                "value": {
+                    "type": ["number", "null"]
+                },
+                "referenceRange": {
+                    "type": ["string", "null"]
+                },
+                "testName": {
+                    "type": ["string", "null"]
+                }
+            },
+            "required": [
+                "unit",
+                "value",
+                "referenceRange",
+                "testName"
+            ]
+        },
+        "description": "A list of lab data entries."
+    }
+}
+
+SCHEMA_INSURANCE_CARD = {
+    "name": {
+        "type": "string",
+        "description": "The full name (first and last) of the insured person."
+    },
+    "insuranceProvider": {
+        "type": "string",
+        "description": "The name of the insurance provider."
+    },
+    "insuranceNumber": {
+        "type": "string",
+        "description": "The number of the insurance. Can be found on bottom left of insurance card."
+    },
+    "customerNumber": {
+        "type": "string",
+        "description": "The identifier of the insured person, also known as Versichertennummer. Might start with a letter, usually on bottom of insurance card."
+    },
+    "cardNumber": {
+        "type": "string",
+        "description": "The identifying number of the card. Can be found on the back of the card on the bottom left."
+    },
+    "birthDate": {
+        "type": "string",
+        "description": "Birthdate of the insured person in DD.MM.YYYY format. Can be found on the back of the insurance card on the right side."
+    },
+    "seventhIdentityNumber": {
+        "type": "string",
+        "description": "Kennnummer des Trägers/Krankenkasse"
+    },
+    "expirationDate": {
+        "type": "string",
+        "description": "Expiration date of the insurance card. Can be found on the bottom right of the backside of the card."
+    }
+}
+
+def model_user_data(uuid: str):
+
+    user_ref = db.collection('users').document(uuid)
+
+    sub_collections = user_ref.collections()
+
+    user_model_dict = defaultdict()
+
+    for collection in sub_collections:
+        docs = collection.order_by(field_path="created_at", direction=firestore.Query.DESCENDING).limit(1)
+        for doc in docs.stream():
+            doc_dict = doc.to_dict()
+            doc_dict['created_at'] = datetime.datetime.fromtimestamp(doc_dict['created_at'].timestamp()).strftime('%d-%m-%Y')
+            user_model_dict[collection.id] = doc_dict
+
+    return user_model_dict
+
 @voice_chat_bp.route('/chat', methods=['POST'])
 def chat():
     try:
@@ -38,11 +316,44 @@ def chat():
             return jsonify({'error': 'No message provided'}), 400
 
         message = data['message']
+
+        user_id = session.get('user_id')
+        if not user_id:
+            return jsonify({'error': 'User not authenticated'}), 401
+            
+        # Get user data using model_user_data function
+        user_model_dict = model_user_data(user_id)
+        
+        # Enhanced system prompt for medical data collection
+        system_prompt = f"""You are an empathetic healthcare professional who is supposed to have a short conversation with a patient who potentially already shared some relevant patient data like recent lab results, doctor's letters, their insurance card information and a medication plan. Your goal is to use the context provided in a single dictionary to derive natural language questions that can bring valuable insight into the state and well-being of the patient for a doctor but also not overwhelm the user in their complexity and length. Make sure to use relatively simple language and be empathetic.
+
+        IMPORTANT: DO NOT start with a generic greeting like "Hello, I'm your medical assistant. How can I help you today?". Instead, immediately start with specific questions based on the patient's data you have access to. For example, if you see lab results, ask about how they're feeling regarding those specific results. If you see medication, ask about their experience with the medication.
+
+        The following schemas detail how the inputs of the user might be structured for each type of input. These inputs are possible:
+        * insuranceCard (Insurance Card Data)
+        * doctorLetter (The most recent Doctor Letter (Arztbrief))
+        * labData (The most recent data gathered from a laboratory analysis)
+        * medicationPlan (A medication plan detailing what medication to take at which times)
+        The Schema are defined as follows
+        insuranceCard:
+        {SCHEMA_INSURANCE_CARD}
+        doctorLetter:
+        {SCHEMA_DOCTOR_LETTER}
+        labData:
+        {SCHEMA_LAB_DATA}
+        medicationPlan:
+        {SCHEMA_MEDICATION_PLAN}
+        You will receive the contextual user data in a dictionary that uses the previously defined inputs as keys (i.e. 'insuranceCard', 'doctorLetter', 'labData', 'medicationPlan') and the corresponding dictionary (defined by the SCHEMA) as the value.
+        Your task is to lead a natural conversation and ask a maximum of 5 questions to find out how the patient feels. Your goal is to find out what the doctors can't describe in their letters and lab analysis - the patients feelings and emotions. 
+        If you notice that the patient wants to end the conversation specifically ask him if he wants to end the conversation. Usually you can assume that they want to continue but if you notice the patient getting aggravated feel free to ask them to stop right there. You can also just end the conversation early by saying these are all the questions I wanted to ask today, thank you for your time. That way the user doesn't even realize that you just purposefully ended the conversation in order to avoid confrontation.
+        For undefined behavior, i.e. queries or answers that have nothing to do with the medical history of the patient and are in general not related to the healthcare of the patient at all are not to be answered. You can just respond with the standard reponse of: "At this time I'm not able to make a comment about this specific topic, let's continue talking about your health".
+        Do not try to match the users style of speaking (i.e. slang, millenial...) as this might irritate them. The following dictonary is the described user context:
+        {json.dumps(user_model_dict, indent=4, ensure_ascii=False)}"""
         
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": "You are a helpful medical assistant. Provide clear, accurate, and empathetic responses to health-related questions."},
+                {"role": "system", "content": system_prompt},
                 {"role": "user", "content": message}
             ]
         )

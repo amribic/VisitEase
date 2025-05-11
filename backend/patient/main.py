@@ -497,23 +497,7 @@ def get_user_basic_profile():
             'email': '',
             'created_at': ''
         })
-    
-def model_user_data(uuid: str):
 
-    user_ref = db.collection('users').document(uuid)
-
-    sub_collections = user_ref.collections()
-
-    user_model_dict = defaultdict()
-
-    for collection in sub_collections:
-        docs = collection.order_by(field_path="created_at", direction=firestore.Query.DESCENDING).limit(1)
-        for doc in docs.stream():
-            doc_dict = doc.to_dict()
-            doc_dict['created_at'] = datetime.datetime.fromtimestamp(doc_dict['created_at'].timestamp()).strftime('%d-%m-%Y')
-            user_model_dict[collection.id] = doc_dict
-
-    return user_model_dict
 
 if __name__ == '__main__':
     app.run(port=8080, debug=True, use_reloader=False)
