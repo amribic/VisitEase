@@ -13,6 +13,7 @@
     error = '';
     
     try {
+      console.log('Attempting login to:', `${API_URL}/login`);
       const response = await fetch(`${API_URL}/login`, {
         method: 'POST',
         headers: {
@@ -25,7 +26,9 @@
         credentials: 'include'
       });
 
+      console.log('Login response status:', response.status);
       const data = await response.json();
+      console.log('Login response data:', data);
       
       if (response.ok) {
         dispatch('success');
@@ -33,6 +36,7 @@
         error = data.message || 'Login failed. Please try again.';
       }
     } catch (e) {
+      console.error('Login error:', e);
       error = 'An error occurred. Please try again.';
     } finally {
       loading = false;

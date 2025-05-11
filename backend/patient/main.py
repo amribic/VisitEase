@@ -27,13 +27,18 @@ conversations = {}
 conversations_lock = Lock()
 
 app = Flask(__name__)
-# Enable CORS for localhost development
-CORS(app, supports_credentials=True, origins=['http://localhost:5173', 'http://localhost:3000'])
+# Enable CORS for both development and production
+CORS(app, supports_credentials=True, origins=[
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'https://visit-ease-qlflskvl9-amribics-projects.vercel.app',
+    'https://visit-ease.vercel.app'
+])
 app.secret_key = 'your_secret_key'  # Change this to a secure secret key in production
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
-app.config['SESSION_COOKIE_SECURE'] = False
+app.config['SESSION_COOKIE_SECURE'] = True  # Enable secure cookies for HTTPS
 app.config['SESSION_COOKIE_HTTPONLY'] = True
-app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_SAMESITE'] = 'None'  # Allow cross-site cookies
 
 # Register blueprints
 app.register_blueprint(voice_chat_bp, url_prefix='/api')
