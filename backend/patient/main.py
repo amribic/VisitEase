@@ -18,8 +18,6 @@ from threading import Lock
 import asyncio
 import wave
 from flask import make_response
-from google.cloud import speech_v1p1beta1 as speech
-from conversation.speech_api import transcribe_audio_in_memory, process_transcription, export_config, getSchemas, model_user_data
 
 conversations = {}
 conversations_lock = Lock()
@@ -510,63 +508,6 @@ def start_conversation():
     response.headers['Content-Type'] = 'audio/wav'
     response.headers['Conversation-ID'] = conv_id
     return response
-
-@app.route('/conversation-turn', methods=['POST'])
-@login_required
-def conversation_turn():
-    conv_id = request.form.get('conv_id')
-    user_audio = request.data
-
-    with conversations_lock:
-        if conv_id not in conversations:
-            return jsonify({'error': 'Conversation not found'}), 404
-        conv = conversations[conv_id]
-
-    conv['wf'].writeframes(user_audio)
-
-    async def send_user_audio(session, audio):
-        await session.send_client_content(
-            turns={"role": "user", "parts": [{"audio": audio}]},
-            turn_complete=True
-        )
-
-    asyncio.run(send_user_audio(conv['session'], user_audio))
-
-    async def get_model_response(session):
-        async for response in session.receive():
-            if response.data is not None:
-                conv['wf'].writeframes(response.data)
-                return response.data
-            break
-        return None
-
-    model_response = asyncio.run(get_model_response(conv['session']))
-
-    conv['turn'] += 1
-    if conv['turn'] >= 5:
-        response = make_response(model_response)
-        response.headers['Content-Type'] = 'audio/wav'
-        response.headers['Conversation-End'] = 'true'
-        
-        with conversations_lock:
-            if conv_id not in conversations:
-                return jsonify({'error': 'Conversation not found'}), 404
-            conv = conversations[conv_id]
-
-        conv['wf'].close()
-        audio_content = conv['audio_buffer'].getvalue()
-
-        transcription = transcribe_audio_in_memory(audio_content)
-        structured_data = process_transcription(transcription)
-
-        with conversations_lock:
-            del conversations[conv_id]
-        db.collection('users').document(current_user.id).collection('conversation').document(conv_id).set(structured_data)
-        return response
-    else:
-        response = make_response(model_response)
-        response.headers['Content-Type'] = 'audio/wav'
-        return response
 
 @app.route('/get-structured-data', methods=["GET"])
 def get_structured_data():
