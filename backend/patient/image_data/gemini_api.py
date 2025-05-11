@@ -9,6 +9,9 @@ from .classes.DoctorLetter import DoctorLetter
 from .classes.MedicationPlan import MedicationPlan
 from .classes.LabReport import LabReport
 from .classes.InsuranceCard import InsuranceCard
+from PIL import Image
+import io
+import base64
 
 SCHEMA_DOCTOR_LETTER = {
     "reasonForReferral": {
@@ -320,10 +323,14 @@ def call_gemini_api(file_path: str, document_type: str):
   load_dotenv()
 
   GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+  if not GOOGLE_API_KEY:
+    raise ValueError("GOOGLE_API_KEY environment variable is not set")
 
-  client = genai.Client(api_key=GOOGLE_API_KEY)
+  # Configure the Gemini API
+  genai.configure(api_key=GOOGLE_API_KEY)
 
-  myfile = client.files.upload(file=file_path)
+  # Initialize the model with the new version
+  model = genai.GenerativeModel('gemini-1.5-flash')
 
   if (document_type == "doctorLetter"):
     SCHEMA = SCHEMA_DOCTOR_LETTER
@@ -358,44 +365,64 @@ def call_gemini_api(file_path: str, document_type: str):
     """
  
   start_time = time.time()
-  response = client.models.generate_content(
-      model = "gemini-2.0-flash",
-      contents = [PROMPT, myfile],
-  )
-  end_time = time.time()
-  print(f"Time taken: {end_time - start_time} seconds")
+  
+  try:
+    # Read the PDF file and convert to base64
+    with open(file_path, 'rb') as f:
+      pdf_data = f.read()
+      pdf_base64 = base64.b64encode(pdf_data).decode('utf-8')
+    
+    # Create the content parts for Gemini API
+    content_parts = [
+      {"text": PROMPT},
+      {
+        "inline_data": {
+          "mime_type": "application/pdf",
+          "data": pdf_base64
+        }
+      }
+    ]
+    
+    # Generate content using the model
+    response = model.generate_content(content_parts)
+    
+    end_time = time.time()
+    print(f"Time taken: {end_time - start_time} seconds")
 
-  response = response.text
+    response_text = response.text
 
-  responses = response.split("\n")
-  json_reponse = responses[1]
+    responses = response_text.split("\n")
+    json_response = responses[1]
 
-  json_obj = json.loads(json_reponse)
-  print("Gemini API Response:", json.dumps(json_obj, indent=2))  # Debug log
+    json_obj = json.loads(json_response)
+    print("Gemini API Response:", json.dumps(json_obj, indent=2))  # Debug log
 
-  if (document_type == "doctorLetter"):
-    return createDoctorLetter(json_obj, file_path).to_dict()
-  elif (document_type == "medicationPlan"):
-     return [medicationPlan.to_dict() for medicationPlan in createMedicationPlan(json_obj["medication"], file_path)]
-  elif (document_type == "labData"):
-    try:
-      print("Lab Data Response Structure:", json.dumps(json_obj, indent=2))
-      # For lab data, we need to access the labData array from the response
-      lab_data = json_obj.get("labData", [])
-      if not isinstance(lab_data, list):
-          lab_data = [lab_data]  # Convert single object to list if needed
-      print("Lab Data Array:", json.dumps(lab_data, indent=2))
-      return [labData.to_dict() for labData in createLabData(lab_data, file_path)]
-    except Exception as e:
-      print(f"Error processing lab data: {e}")
-      print(f"Full response structure: {json.dumps(json_obj, indent=2)}")
-      print(f"Error type: {type(e)}")
-      print(f"Error details: {str(e)}")
-      raise
-  elif (document_type == 'insuranceCard'):
-     return createInsuranceCard(json_obj, file_path).to_dict()
-  else:
-    raise ValueError("Invalid document type. Must be 'doctorLetter', 'medicationPlan', 'labData', or 'insuranceCard'.") 
+    if (document_type == "doctorLetter"):
+      return createDoctorLetter(json_obj, file_path).to_dict()
+    elif (document_type == "medicationPlan"):
+       return [medicationPlan.to_dict() for medicationPlan in createMedicationPlan(json_obj["medication"], file_path)]
+    elif (document_type == "labData"):
+      try:
+        print("Lab Data Response Structure:", json.dumps(json_obj, indent=2))
+        # For lab data, we need to access the labData array from the response
+        lab_data = json_obj.get("labData", [])
+        if not isinstance(lab_data, list):
+            lab_data = [lab_data]  # Convert single object to list if needed
+        print("Lab Data Array:", json.dumps(lab_data, indent=2))
+        return [labData.to_dict() for labData in createLabData(lab_data, file_path)]
+      except Exception as e:
+        print(f"Error processing lab data: {e}")
+        print(f"Full response structure: {json.dumps(json_obj, indent=2)}")
+        print(f"Error type: {type(e)}")
+        print(f"Error details: {str(e)}")
+        raise
+    elif (document_type == 'insuranceCard'):
+       return createInsuranceCard(json_obj, file_path).to_dict()
+    else:
+      raise ValueError("Invalid document type. Must be 'doctorLetter', 'medicationPlan', 'labData', or 'insuranceCard'.")
+  except Exception as e:
+    print(f"Error in call_gemini_api: {e}")
+    raise
 
 
 if __name__ == "__main__":
