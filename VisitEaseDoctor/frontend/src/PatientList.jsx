@@ -29,12 +29,6 @@ function PatientList() {
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [debugInfo, setDebugInfo] = useState({
-    userIds: [],
-    failedUsers: [],
-    processingTime: null,
-    lastError: null
-  });
 
   useEffect(() => {
     const fetchPatients = async () => {
@@ -58,7 +52,6 @@ function PatientList() {
         
         const userIds = await response.json();
         console.log('Received user IDs:', userIds);
-        setDebugInfo(prev => ({ ...prev, userIds }));
         
         // Fetch structured data for each user
         console.log('Starting to fetch structured data for each user...');
@@ -143,20 +136,9 @@ function PatientList() {
         console.log('Final processed patients data:', patientsData);
         
         setPatients(patientsData);
-        setDebugInfo(prev => ({
-          ...prev,
-          failedUsers,
-          processingTime: Date.now() - startTime,
-          lastError: null
-        }));
       } catch (err) {
         console.error('Error in fetchPatients:', err);
         setError(err.message);
-        setDebugInfo(prev => ({
-          ...prev,
-          lastError: err.message,
-          processingTime: Date.now() - startTime
-        }));
       } finally {
         setLoading(false);
       }
@@ -206,46 +188,10 @@ function PatientList() {
     patient.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Debug information display
-  const renderDebugInfo = () => {
-    if (process.env.NODE_ENV === 'development') {
-      return (
-        <div style={{ 
-          position: 'fixed', 
-          bottom: 0, 
-          right: 0, 
-          background: 'rgba(0,0,0,0.8)', 
-          color: 'white', 
-          padding: '10px',
-          fontSize: '12px',
-          maxHeight: '200px',
-          overflow: 'auto',
-          zIndex: 1000
-        }}>
-          <h4>Debug Info:</h4>
-          <div>Total Users: {debugInfo.userIds.length}</div>
-          <div>Failed Users: {debugInfo.failedUsers.length}</div>
-          <div>Processing Time: {debugInfo.processingTime}ms</div>
-          {debugInfo.lastError && <div>Last Error: {debugInfo.lastError}</div>}
-          {debugInfo.failedUsers.length > 0 && (
-            <div>
-              Failed Users Details:
-              {debugInfo.failedUsers.map((user, idx) => (
-                <div key={idx}>User {user.id}: {user.error}</div>
-              ))}
-            </div>
-          )}
-        </div>
-      );
-    }
-    return null;
-  };
-
   if (loading) {
     return (
       <div className="patient-app-bg">
         <div>Loading...</div>
-        {renderDebugInfo()}
       </div>
     );
   }
@@ -254,7 +200,6 @@ function PatientList() {
     return (
       <div className="patient-app-bg">
         <div>Error: {error}</div>
-        {renderDebugInfo()}
       </div>
     );
   }
@@ -310,7 +255,6 @@ function PatientList() {
           </table>
         </div>
       </div>
-      {renderDebugInfo()}
     </div>
   );
 }
