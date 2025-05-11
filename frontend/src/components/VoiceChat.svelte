@@ -21,26 +21,60 @@
         // Check if browser is Firefox
         isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
 
-        // Initialize messages with a welcome message
-        messages = [
-            {
-                role: 'assistant',
-                content: 'Hello! I\'m your medical assistant. How can I help you today?',
-                id: messageId++
-            }
-        ];
+        // Initialize messages with an empty array - the first message will come from the backend
+        messages = [];
 
         // Initialize speech synthesis voices
         if (speechSynthesis) {
             // Wait for voices to be loaded
             if (speechSynthesis.getVoices().length === 0) {
                 speechSynthesis.onvoiceschanged = () => {
-                    console.log('Voices loaded, speaking welcome message');
-                    speakMessage(messages[0].content);
+                    // Get initial message from backend
+                    fetch('/api/chat', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ message: 'start' })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.response) {
+                            messages = [{
+                                role: 'assistant',
+                                content: data.response,
+                                id: messageId++
+                            }];
+                            speakMessage(data.response);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error getting initial message:', error);
+                    });
                 };
             } else {
-                console.log('Voices already loaded, speaking welcome message');
-                speakMessage(messages[0].content);
+                // Get initial message from backend
+                fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message: 'start' })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.response) {
+                        messages = [{
+                            role: 'assistant',
+                            content: data.response,
+                            id: messageId++
+                        }];
+                        speakMessage(data.response);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error getting initial message:', error);
+                });
             }
         }
 

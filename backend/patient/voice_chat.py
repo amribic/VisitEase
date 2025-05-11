@@ -327,8 +327,6 @@ def chat():
         # Enhanced system prompt for medical data collection
         system_prompt = f"""You are an empathetic healthcare professional who is supposed to have a short conversation with a patient who potentially already shared some relevant patient data like recent lab results, doctor's letters, their insurance card information and a medication plan. Your goal is to use the context provided in a single dictionary to derive natural language questions that can bring valuable insight into the state and well-being of the patient for a doctor but also not overwhelm the user in their complexity and length. Make sure to use relatively simple language and be empathetic.
 
-        IMPORTANT: DO NOT start with a generic greeting like "Hello, I'm your medical assistant. How can I help you today?". Instead, immediately start with specific questions based on the patient's data you have access to. For example, if you see lab results, ask about how they're feeling regarding those specific results. If you see medication, ask about their experience with the medication.
-
         The following schemas detail how the inputs of the user might be structured for each type of input. These inputs are possible:
         * insuranceCard (Insurance Card Data)
         * doctorLetter (The most recent Doctor Letter (Arztbrief))
@@ -350,13 +348,28 @@ def chat():
         Do not try to match the users style of speaking (i.e. slang, millenial...) as this might irritate them. The following dictonary is the described user context:
         {json.dumps(user_model_dict, indent=4, ensure_ascii=False)}"""
         
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": message}
-            ]
-        )
+        # Special handling for initial message
+        if message == 'start':
+            initial_prompt = f"""Based on the patient's data, start the conversation with a specific question about their health. DO NOT use generic greetings or ask how you can help. Instead, immediately ask about something specific from their medical data. For example:
+            - If they have lab results, ask about how they're feeling regarding those specific results
+            - If they have a medication plan, ask about their experience with the medications
+            - If they have a doctor's letter, ask about their condition mentioned in the letter
+            The patient's data is: {json.dumps(user_model_dict, indent=4, ensure_ascii=False)}"""
+            
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": initial_prompt}
+                ]
+            )
+        else:
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": message}
+                ]
+            )
         
         return jsonify({'response': response.choices[0].message.content})
     except Exception as e:
