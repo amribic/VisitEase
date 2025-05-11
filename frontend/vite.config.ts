@@ -12,5 +12,18 @@ export default defineConfig({
         secure: false,
       }
     }
-  }
+  },
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
+    sourcemap: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['svelte']
+        }
+      }
+    }
+  },
+  publicDir: 'public'
 }) 
