@@ -101,95 +101,52 @@
         }
     });
 
-    function speakMessage(text: string) {
-        if (speechSynthesis) {
+    async function speakMessage(text: string) {
+        try {
             console.log('Starting speech synthesis for:', text);
-            speechSynthesis.cancel();
             showAssistantBubble = true;
+            isSpeaking = true;
 
-            const utterance = new SpeechSynthesisUtterance(text);
+            // Call our backend endpoint for text-to-speech
+            const response = await fetch('/api/text-to-speech', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ text })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to generate speech');
+            }
+
+            // Get the audio blob
+            const audioBlob = await response.blob();
+            const audioUrl = URL.createObjectURL(audioBlob);
             
-            // Adjust speech parameters for more natural sound
-            utterance.rate = 0.85;  // Slower for more natural pace
-            utterance.pitch = 1.0;  // Natural pitch
-            utterance.volume = 1.0;
-
-            // Get available voices
-            const voices = speechSynthesis.getVoices();
-            console.log('Available voices:', voices.map(v => v.name));
-
-            // Try to find a more natural-sounding voice
-            let preferredVoice = voices.find(voice => 
-                voice.name.includes('Samantha') ||     // Natural female voice
-                voice.name.includes('Karen') ||        // Natural female voice
-                voice.name.includes('Daniel') ||       // Natural male voice
-                voice.name.includes('Google UK English Female') || // Natural British voice
-                voice.name.includes('Microsoft Zira') || // Natural female voice
-                voice.name.includes('Microsoft David') || // Natural male voice
-                voice.name.includes('Google UK English Male') || // Natural British male voice
-                voice.name.includes('Google US English Female') || // Natural US female voice
-                voice.name.includes('Google US English Male')     // Natural US male voice
-            );
-
-            // If no preferred voice found, try to get any English voice
-            if (!preferredVoice) {
-                preferredVoice = voices.find(voice => 
-                    voice.lang.includes('en') && 
-                    !voice.name.includes('Google') && // Avoid robotic Google voices
-                    !voice.name.includes('Microsoft') // Avoid robotic Microsoft voices
-                );
-            }
-
-            if (preferredVoice) {
-                console.log('Using voice:', preferredVoice.name);
-                utterance.voice = preferredVoice;
-            } else {
-                console.log('No preferred voice found, using default');
-            }
-
-            // Add slight pauses at punctuation for more natural speech
-            text = text.replace(/[.,!?]/g, match => match + ' ');
-            utterance.text = text;
-
-            // Add slight variations in pitch for more natural intonation
-            utterance.onboundary = (event) => {
-                if (event.name === 'sentence') {
-                    // Slightly vary pitch at sentence boundaries
-                    utterance.pitch = 0.9 + Math.random() * 0.2;
-                }
-            };
-
-            utterance.onstart = () => {
-                console.log('Speech started');
-                isSpeaking = true;
-            };
-
-            utterance.onend = () => {
+            // Create and play audio
+            const audio = new Audio(audioUrl);
+            
+            audio.onended = () => {
                 console.log('Speech ended');
                 isSpeaking = false;
                 showAssistantBubble = false;
+                URL.revokeObjectURL(audioUrl);
             };
 
-            utterance.onerror = (event) => {
-                console.error('Speech synthesis error:', event);
+            audio.onerror = (error) => {
+                console.error('Speech synthesis error:', error);
                 isSpeaking = false;
                 showAssistantBubble = false;
+                URL.revokeObjectURL(audioUrl);
             };
 
-            // Ensure voices are loaded before speaking
-            if (voices.length === 0) {
-                console.log('Waiting for voices to load...');
-                speechSynthesis.onvoiceschanged = () => {
-                    console.log('Voices loaded, retrying speech');
-                    speakMessage(text);
-                };
-                return;
-            }
-
-            console.log('Speaking message...');
-            speechSynthesis.speak(utterance);
-        } else {
-            console.error('Speech synthesis not supported');
+            console.log('Playing audio...');
+            await audio.play();
+        } catch (error) {
+            console.error('Error in speech synthesis:', error);
+            isSpeaking = false;
+            showAssistantBubble = false;
         }
     }
 
