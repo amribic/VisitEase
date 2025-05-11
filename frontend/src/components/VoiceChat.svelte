@@ -30,7 +30,6 @@
         // Special handling for Safari on iOS
         if (isIOS && isSafari) {
             console.log('Detected Safari on iOS');
-            // Use MediaRecorder as fallback for iOS Safari
             if (!hasMediaRecorder) {
                 console.error('MediaRecorder not supported on this device');
                 messages = [{
@@ -40,6 +39,7 @@
                 }];
                 return;
             }
+            // Continue with MediaRecorder initialization
         } else if (!hasSpeechRecognition && !hasMediaRecorder) {
             console.error('Speech recognition not supported in this browser');
             messages = [{
@@ -220,16 +220,22 @@
                 if (!('MediaRecorder' in window)) {
                     throw new Error('MediaRecorder not supported');
                 }
-                mediaRecorder = new MediaRecorder(stream);
+                mediaRecorder = new MediaRecorder(stream, {
+                    mimeType: isIOS ? 'audio/mp4' : 'audio/webm'
+                });
                 audioChunks = [];
                 showUserBubble = true;
 
                 mediaRecorder.ondataavailable = (event) => {
-                    audioChunks.push(event.data);
+                    if (event.data.size > 0) {
+                        audioChunks.push(event.data);
+                    }
                 };
 
                 mediaRecorder.onstop = async () => {
-                    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                    const audioBlob = new Blob(audioChunks, { 
+                        type: isIOS ? 'audio/mp4' : 'audio/webm'
+                    });
                     showUserBubble = false;
                     await processAudio(audioBlob);
                 };
@@ -259,7 +265,7 @@
 
     function stopRecording() {
         console.log('Stopping recording...');
-        if (isFirefox && mediaRecorder && isRecording) {
+        if ((isFirefox || isIOS) && mediaRecorder && isRecording) {
             mediaRecorder.stop();
             mediaRecorder.stream.getTracks().forEach(track => track.stop());
             isRecording = false;
@@ -273,7 +279,7 @@
             console.log('Processing audio...');
             // Convert audio to text using OpenAI's Whisper API
             const formData = new FormData();
-            formData.append('file', audioBlob, 'audio.wav');
+            formData.append('file', audioBlob, isIOS ? 'audio.m4a' : 'audio.webm');
             formData.append('model', 'whisper-1');
 
             const response = await fetch(`${API_URL}/api/transcribe`, {
