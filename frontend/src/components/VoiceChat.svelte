@@ -1,6 +1,7 @@
 <script lang="ts">
     import { onMount } from 'svelte';
     import { fade } from 'svelte/transition';
+    import { API_URL } from '../config';
 
     let messages: { role: 'user' | 'assistant', content: string, id: number }[] = [];
     let userInput = '';
@@ -30,7 +31,7 @@
             if (speechSynthesis.getVoices().length === 0) {
                 speechSynthesis.onvoiceschanged = () => {
                     // Get initial message from backend
-                    fetch('/api/chat', {
+                    fetch(`${API_URL}/api/chat`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -54,7 +55,7 @@
                 };
             } else {
                 // Get initial message from backend
-                fetch('/api/chat', {
+                fetch(`${API_URL}/api/chat`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -142,7 +143,7 @@
             isSpeaking = true;
 
             // Call our backend endpoint for text-to-speech
-            const response = await fetch('/api/text-to-speech', {
+            const response = await fetch(`${API_URL}/api/text-to-speech`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -238,7 +239,7 @@
             formData.append('file', audioBlob, 'audio.wav');
             formData.append('model', 'whisper-1');
 
-            const response = await fetch('/api/transcribe', {
+            const response = await fetch(`${API_URL}/api/transcribe`, {
                 method: 'POST',
                 body: formData
             });
@@ -279,7 +280,7 @@
         
         try {
             console.log('Sending message:', userInput);
-            const response = await fetch('/api/chat', {
+            const response = await fetch(`${API_URL}/api/chat`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

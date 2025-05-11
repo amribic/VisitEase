@@ -1,6 +1,7 @@
 <script lang="ts">
   import { createEventDispatcher, onMount } from 'svelte';
   import googleFitLogo from '../assets/google-fit-logo.png';
+  import { API_URL } from '../config';
   const dispatch = createEventDispatcher();
 
   let isConnected = false;
@@ -35,7 +36,7 @@
     successMessage = '';
     
     try {
-      const response = await fetch('http://localhost:8080/authorize', {
+      const response = await fetch(`${API_URL}/authorize`, {
         credentials: 'include'
       });
       
@@ -81,7 +82,7 @@
 
   async function checkConnectionStatus() {
     try {
-      const response = await fetch('http://localhost:8080/fitness', {
+      const response = await fetch(`${API_URL}/fitness`, {
         credentials: 'include',
         method: 'HEAD'
       });

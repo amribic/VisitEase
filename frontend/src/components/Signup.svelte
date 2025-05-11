@@ -1,5 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
+  import { API_URL } from '../config';
   const dispatch = createEventDispatcher();
 
   let email = '';
@@ -22,7 +23,7 @@
     }
 
     try {
-      const response = await fetch('http://localhost:8080/signup', {
+      const response = await fetch(`${API_URL}/signup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',

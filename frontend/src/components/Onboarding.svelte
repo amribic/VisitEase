@@ -3,6 +3,7 @@
     import NewInfoCheck from './NewInfoCheck.svelte';
     import VoiceChatStep from './VoiceChatStep.svelte';
     import { v4 as uuidv4 } from 'uuid';
+    import { API_URL } from '../config';
     
     // Steps data model
     const steps = [
@@ -101,7 +102,7 @@
           const formData = new FormData();
           formData.append('image', files[i]);
 
-          const response = await fetch(`http://localhost:8080/upload-image?image_type=${type}&uuid=${uuid}`, {
+          const response = await fetch(`${API_URL}/upload-image?image_type=${type}&uuid=${uuid}`, {
             method: 'POST',
             body: formData,
             credentials: 'include'
@@ -118,7 +119,7 @@
         pdfForm.append('image_type', type);
         pdfForm.append('uuid', uuid);
         
-        const pdfResponse = await fetch('http://localhost:8080/convert-images-to-pdf', {
+        const pdfResponse = await fetch(`${API_URL}/convert-images-to-pdf`, {
           method: 'POST',
           body: pdfForm,
           credentials: 'include'
@@ -168,7 +169,7 @@
             const formData = new FormData();
             formData.append('image', files[i]);
 
-            const response = await fetch(`http://localhost:8080/upload-image?image_type=insuranceCard&uuid=${insuranceUuid}`, {
+            const response = await fetch(`${API_URL}/upload-image?image_type=insuranceCard&uuid=${insuranceUuid}`, {
               method: 'POST',
               body: formData,
               credentials: 'include'
@@ -185,7 +186,7 @@
           pdfForm.append('image_type', 'insuranceCard');
           pdfForm.append('uuid', insuranceUuid);
           
-          const pdfResponse = await fetch('http://localhost:8080/convert-images-to-pdf', {
+          const pdfResponse = await fetch(`${API_URL}/convert-images-to-pdf`, {
             method: 'POST',
             body: pdfForm,
             credentials: 'include'
