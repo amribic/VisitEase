@@ -23,6 +23,7 @@ function PatientDetail({ patient, onBack }) {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [pdfs, setPdfs] = useState([]);
 
   // ChatGPT-like interface state
   const [messages, setMessages] = useState([
@@ -49,7 +50,32 @@ function PatientDetail({ patient, onBack }) {
       }
     };
 
+    const fetchPdfs = async () => {
+      try {
+        const fileTypes = ['labData', 'insuranceCard', 'doctorLetter'];
+        const pdfPromises = fileTypes.map(async (type) => {
+          const response = await fetch(`http://localhost:8080/get-pdf-by-type-for-user?user_id=${patient.id}&file_type=${type}`, {
+            credentials: 'include'
+          });
+          if (response.ok) {
+            const data = await response.json();
+            return {
+              name: `${type.charAt(0).toUpperCase() + type.slice(1)}.pdf`,
+              url: data.url
+            };
+          }
+          return null;
+        });
+
+        const pdfResults = await Promise.all(pdfPromises);
+        setPdfs(pdfResults.filter(Boolean));
+      } catch (err) {
+        console.error('Error fetching PDFs:', err);
+      }
+    };
+
     fetchUserData();
+    fetchPdfs();
   }, [patient.id]);
 
   // Scroll to top on mount
@@ -102,13 +128,18 @@ function PatientDetail({ patient, onBack }) {
       trigger: doctorLetter.assessment || [],
     },
     other: doctorLetter.plan || [],
-    pdfs: [
-      { name: 'Lab Results.pdf', url: '#' },
-      { name: 'Prescription.pdf', url: '#' },
-      { name: 'Discharge Summary.pdf', url: '#' },
-    ],
     reportUrl: '#',
   };
+
+  // PDF types to display
+  const pdfTypes = [
+    { type: 'labData', label: 'Lab Results' },
+    { type: 'insuranceCard', label: 'Insurance Card' },
+    { type: 'doctorLetter', label: 'Doctor Letter' },
+  ];
+
+  // Helper to get PDF by type
+  const getPdfByType = (type) => pdfs.find(pdf => pdf.name.toLowerCase().includes(type.toLowerCase()));
 
   return (
     <div className="patient-detail-bg">
@@ -223,25 +254,34 @@ function PatientDetail({ patient, onBack }) {
         </div>
         {/* PDF container */}
         <div className="patient-detail-pdf-container">
-          {displayData.pdfs.map((pdf, i) => (
-            <div
-              key={pdf.name}
-              className="patient-detail-pdf-entry"
-              onClick={() => window.open(pdf.url, '_blank')}
-            >
-              <PdfIcon />
-              {pdf.name}
-              <a
-                href={pdf.url}
-                download={pdf.name}
-                className="patient-detail-pdf-download"
-                onClick={e => e.stopPropagation()}
-                title={`Download ${pdf.name}`}
+          {pdfTypes.map(({ type, label }) => {
+            const pdf = getPdfByType(type);
+            return (
+              <div
+                key={type}
+                className="patient-detail-pdf-entry"
+                style={{ display: 'flex', alignItems: 'center', cursor: pdf ? 'pointer' : 'default', padding: '1.1rem 2rem', borderBottom: '1px solid #e0e0e0' }}
+                onClick={() => pdf && window.open(pdf.url, '_blank')}
               >
-                <DownloadIcon />
-              </a>
-            </div>
-          ))}
+                <PdfIcon />
+                <span style={{ fontWeight: 500, fontSize: '1.08em', color: pdf ? '#21756c' : '#888', flex: 1 }}>{label}</span>
+                {pdf ? (
+                  <a
+                    href={pdf.url}
+                    download={label.replace(/ /g, '_') + '.pdf'}
+                    className="patient-detail-pdf-download"
+                    style={{ marginLeft: 'auto' }}
+                    onClick={e => e.stopPropagation()}
+                    title={`Download ${label}`}
+                  >
+                    <DownloadIcon />
+                  </a>
+                ) : (
+                  <span style={{ color: '#888', fontStyle: 'italic', marginLeft: 'auto' }}>No PDF</span>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

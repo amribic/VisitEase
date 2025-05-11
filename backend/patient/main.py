@@ -447,11 +447,10 @@ def get_user_type_pdf():
     if not user_id or not file_type:
         return jsonify({"error": "Missing user_id or file_type"}), 400
     
-    prefix = f"users{user_id}/pdf-data/{file_type}/"
+    prefix = f"users/{user_id}/pdf-data/{file_type}/"
 
     try:
-        client = storage.Client()
-        bucket = client.bucket(name='avi-cdtm-hack-team-1613.firebasestorage.app')
+        bucket = storage.bucket(name='avi-cdtm-hack-team-1613.firebasestorage.app')
         blobs = list(bucket.list_blobs(prefix=prefix))
 
         if not blobs:
