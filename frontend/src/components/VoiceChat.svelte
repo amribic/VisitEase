@@ -12,6 +12,10 @@
     let mediaRecorder: MediaRecorder | null = null;
     let audioChunks: Blob[] = [];
     let isFirefox = false;
+    let isSpeaking = false;
+    let speechSynthesis = window.speechSynthesis;
+    let showUserBubble = false;
+    let showAssistantBubble = false;
 
     onMount(() => {
         // Check if browser is Firefox
@@ -26,6 +30,20 @@
             }
         ];
 
+        // Initialize speech synthesis voices
+        if (speechSynthesis) {
+            // Wait for voices to be loaded
+            if (speechSynthesis.getVoices().length === 0) {
+                speechSynthesis.onvoiceschanged = () => {
+                    console.log('Voices loaded, speaking welcome message');
+                    speakMessage(messages[0].content);
+                };
+            } else {
+                console.log('Voices already loaded, speaking welcome message');
+                speakMessage(messages[0].content);
+            }
+        }
+
         // Initialize speech recognition for non-Firefox browsers
         if (!isFirefox && 'webkitSpeechRecognition' in window) {
             recognition = new (window as any).webkitSpeechRecognition();
@@ -37,6 +55,8 @@
                 console.log('Recognition started');
                 finalTranscript = '';
                 userInput = '';
+                showUserBubble = true;
+                isProcessing = false;
             };
 
             recognition.onresult = (event: any) => {
@@ -52,37 +72,137 @@
                 }
 
                 userInput = finalTranscript || interimTranscript;
-                console.log('Final transcript:', finalTranscript);
-                console.log('Interim transcript:', interimTranscript);
+                console.log('Current transcript:', userInput);
             };
 
             recognition.onerror = (event: any) => {
                 console.error('Speech recognition error:', event.error);
                 isRecording = false;
                 isProcessing = false;
+                showUserBubble = false;
             };
 
             recognition.onend = () => {
                 console.log('Recognition ended');
                 isRecording = false;
+                showUserBubble = false;
                 if (finalTranscript.trim()) {
+                    console.log('Final transcript:', finalTranscript);
                     userInput = finalTranscript;
-                    handleSubmit();
+                    handleSubmit().catch(error => {
+                        console.error('Error in onend handler:', error);
+                        isProcessing = false;
+                    });
+                } else {
+                    console.log('No final transcript to send');
+                    isProcessing = false;
                 }
             };
         }
     });
 
+    function speakMessage(text: string) {
+        if (speechSynthesis) {
+            console.log('Starting speech synthesis for:', text);
+            speechSynthesis.cancel();
+            showAssistantBubble = true;
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            
+            // Adjust speech parameters for more natural sound
+            utterance.rate = 0.85;  // Slower for more natural pace
+            utterance.pitch = 1.0;  // Natural pitch
+            utterance.volume = 1.0;
+
+            // Get available voices
+            const voices = speechSynthesis.getVoices();
+            console.log('Available voices:', voices.map(v => v.name));
+
+            // Try to find a more natural-sounding voice
+            let preferredVoice = voices.find(voice => 
+                voice.name.includes('Samantha') ||     // Natural female voice
+                voice.name.includes('Karen') ||        // Natural female voice
+                voice.name.includes('Daniel') ||       // Natural male voice
+                voice.name.includes('Google UK English Female') || // Natural British voice
+                voice.name.includes('Microsoft Zira') || // Natural female voice
+                voice.name.includes('Microsoft David') || // Natural male voice
+                voice.name.includes('Google UK English Male') || // Natural British male voice
+                voice.name.includes('Google US English Female') || // Natural US female voice
+                voice.name.includes('Google US English Male')     // Natural US male voice
+            );
+
+            // If no preferred voice found, try to get any English voice
+            if (!preferredVoice) {
+                preferredVoice = voices.find(voice => 
+                    voice.lang.includes('en') && 
+                    !voice.name.includes('Google') && // Avoid robotic Google voices
+                    !voice.name.includes('Microsoft') // Avoid robotic Microsoft voices
+                );
+            }
+
+            if (preferredVoice) {
+                console.log('Using voice:', preferredVoice.name);
+                utterance.voice = preferredVoice;
+            } else {
+                console.log('No preferred voice found, using default');
+            }
+
+            // Add slight pauses at punctuation for more natural speech
+            text = text.replace(/[.,!?]/g, match => match + ' ');
+            utterance.text = text;
+
+            // Add slight variations in pitch for more natural intonation
+            utterance.onboundary = (event) => {
+                if (event.name === 'sentence') {
+                    // Slightly vary pitch at sentence boundaries
+                    utterance.pitch = 0.9 + Math.random() * 0.2;
+                }
+            };
+
+            utterance.onstart = () => {
+                console.log('Speech started');
+                isSpeaking = true;
+            };
+
+            utterance.onend = () => {
+                console.log('Speech ended');
+                isSpeaking = false;
+                showAssistantBubble = false;
+            };
+
+            utterance.onerror = (event) => {
+                console.error('Speech synthesis error:', event);
+                isSpeaking = false;
+                showAssistantBubble = false;
+            };
+
+            // Ensure voices are loaded before speaking
+            if (voices.length === 0) {
+                console.log('Waiting for voices to load...');
+                speechSynthesis.onvoiceschanged = () => {
+                    console.log('Voices loaded, retrying speech');
+                    speakMessage(text);
+                };
+                return;
+            }
+
+            console.log('Speaking message...');
+            speechSynthesis.speak(utterance);
+        } else {
+            console.error('Speech synthesis not supported');
+        }
+    }
+
     async function startRecording() {
-        if (isProcessing) return;
+        if (isProcessing || isSpeaking) return;
         
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             
             if (isFirefox) {
-                // Firefox: Use MediaRecorder
                 mediaRecorder = new MediaRecorder(stream);
                 audioChunks = [];
+                showUserBubble = true;
 
                 mediaRecorder.ondataavailable = (event) => {
                     audioChunks.push(event.data);
@@ -90,19 +210,17 @@
 
                 mediaRecorder.onstop = async () => {
                     const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                    showUserBubble = false;
                     await processAudio(audioBlob);
                 };
 
                 mediaRecorder.start();
                 isRecording = true;
-                console.log('Started recording in Firefox');
             } else if (recognition) {
-                // Chrome/Edge: Use Web Speech API
                 userInput = '';
                 finalTranscript = '';
                 recognition.start();
                 isRecording = true;
-                console.log('Started recording with Web Speech API');
             }
         } catch (error) {
             console.error('Error accessing microphone:', error);
@@ -111,7 +229,7 @@
     }
 
     function stopRecording() {
-        console.log('Stopping recording');
+        console.log('Stopping recording...');
         if (isFirefox && mediaRecorder && isRecording) {
             mediaRecorder.stop();
             mediaRecorder.stream.getTracks().forEach(track => track.stop());
@@ -122,8 +240,8 @@
     }
 
     async function processAudio(audioBlob: Blob) {
-        isProcessing = true;
         try {
+            console.log('Processing audio...');
             // Convert audio to text using OpenAI's Whisper API
             const formData = new FormData();
             formData.append('file', audioBlob, 'audio.wav');
@@ -140,25 +258,34 @@
                 throw new Error(data.error);
             }
 
+            console.log('Transcribed text:', data.text);
             userInput = data.text;
-            await handleSubmit();
+            
+            if (userInput.trim()) {
+                console.log('Sending transcribed message...');
+                await handleSubmit();
+            } else {
+                console.log('No text to send after transcription');
+            }
         } catch (error) {
             console.error('Error processing audio:', error);
             messages = [...messages, 
-                { role: 'assistant', content: 'I apologize, but I encountered an error processing your voice. Please try typing your message instead.', id: messageId++ }
+                { role: 'assistant', content: 'I apologize, but I encountered an error processing your voice. Please try again.', id: messageId++ }
             ];
+            speakMessage('I apologize, but I encountered an error processing your voice. Please try again.');
         } finally {
             isProcessing = false;
         }
     }
 
     async function handleSubmit() {
-        if (!userInput.trim() || isProcessing) {
-            console.log('No input to process or already processing');
+        if (!userInput.trim()) {
+            console.log('No input to process');
             return;
         }
+
+        console.log('Starting to process message:', userInput);
         
-        isProcessing = true;
         try {
             console.log('Sending message:', userInput);
             const response = await fetch('/api/chat', {
@@ -171,85 +298,86 @@
                 })
             });
 
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+            }
+
             const data = await response.json();
+            console.log('Received response data:', data);
             
-            if (data.error) {
-                throw new Error(data.error);
+            if (!data.response) {
+                throw new Error('No response from assistant');
             }
             
+            const assistantMessage = data.response;
+            console.log('Assistant message:', assistantMessage);
+            
+            // Add user message first
             messages = [...messages, 
-                { role: 'user', content: userInput, id: messageId++ },
-                { role: 'assistant', content: data.response, id: messageId++ }
+                { role: 'user', content: userInput, id: messageId++ }
             ];
             
+            // Then add and speak assistant's response
+            messages = [...messages, 
+                { role: 'assistant', content: assistantMessage, id: messageId++ }
+            ];
+            
+            // Clear input before speaking
             userInput = '';
             finalTranscript = '';
+            
+            // Speak the assistant's response
+            console.log('Speaking assistant response...');
+            speakMessage(assistantMessage);
+            
         } catch (error) {
-            console.error('Error sending message:', error);
+            console.error('Error in handleSubmit:', error);
+            const errorMessage = 'I apologize, but I encountered an error. Please try again.';
             messages = [...messages, 
-                { role: 'assistant', content: 'I apologize, but I encountered an error. Please try again.', id: messageId++ }
+                { role: 'assistant', content: errorMessage, id: messageId++ }
             ];
-        } finally {
-            isProcessing = false;
+            speakMessage(errorMessage);
         }
     }
 </script>
 
 <div class="voice-chat-container">
-    <div class="messages-container">
-        {#each messages as message (message.id)}
-            <div 
-                class="message {message.role}" 
-                in:fade={{ duration: 200 }}
-            >
-                {message.content}
+    <div class="bubbles-container">
+        {#if showUserBubble}
+            <div class="voice-bubble user" in:fade={{ duration: 200 }}>
+                <div class="bubble-dots">
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                </div>
             </div>
-        {/each}
+        {/if}
+        {#if showAssistantBubble}
+            <div class="voice-bubble assistant" in:fade={{ duration: 200 }}>
+                <div class="bubble-dots">
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                </div>
+            </div>
+        {/if}
     </div>
 
     <div class="input-container">
-        <div class="input-wrapper">
-            <button 
-                class="record-button {isRecording ? 'recording' : ''}"
-                on:click={isRecording ? stopRecording : startRecording}
-                disabled={isProcessing}
-                title={isRecording ? 'Stop recording' : 'Start recording'}
-            >
-                {#if isRecording}
-                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <rect x="9" y="9" width="6" height="6"></rect>
-                    </svg>
-                {:else}
-                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                        <line x1="12" y1="19" x2="12" y2="23"></line>
-                        <line x1="8" y1="23" x2="16" y2="23"></line>
-                    </svg>
-                {/if}
-            </button>
-
-            <button 
-                class="send-button"
-                on:click={handleSubmit}
-                disabled={isProcessing || !userInput.trim()}
-                title="Send message"
-            >
-                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="22" y1="2" x2="11" y2="13"></line>
-                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-                </svg>
-            </button>
-
-            <input
-                type="text"
-                bind:value={userInput}
-                placeholder="Type your message..."
-                on:keydown={(e) => e.key === 'Enter' && handleSubmit()}
-                disabled={isProcessing}
-            />
-        </div>
+        <button 
+            class="record-button {isRecording ? 'recording' : ''}"
+            on:click={isRecording ? stopRecording : startRecording}
+            disabled={isProcessing || isSpeaking}
+            title={isRecording ? 'Stop recording' : 'Start recording'}
+        >
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                <line x1="12" y1="19" x2="12" y2="23"></line>
+                <line x1="8" y1="23" x2="16" y2="23"></line>
+            </svg>
+        </button>
     </div>
 </div>
 
@@ -269,117 +397,86 @@
         overflow: hidden;
     }
 
-    .messages-container {
-        flex-grow: 1;
-        overflow-y: auto;
-        padding: 1rem;
-        background: #f8f9fa;
-        border-radius: 8px;
-        margin-bottom: 1rem;
-        max-height: 400px;
-        scroll-behavior: smooth;
+    .bubbles-container {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 2rem;
+        padding: 2rem;
     }
 
-    .message {
-        margin: 0.5rem 0;
-        padding: 0.75rem 1rem;
-        border-radius: 12px;
-        max-width: 80%;
-        word-wrap: break-word;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-        animation: messageAppear 0.3s ease-out;
+    .voice-bubble {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: pulse 2s infinite;
     }
 
-    @keyframes messageAppear {
-        from {
-            opacity: 0;
-            transform: translateY(10px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    .user {
+    .voice-bubble.user {
         background: #6a00ff;
-        color: white;
-        margin-left: auto;
     }
 
-    .assistant {
+    .voice-bubble.assistant {
+        background: #dc3545;
+    }
+
+    .bubble-dots {
+        display: flex;
+        gap: 4px;
+    }
+
+    .dot {
+        width: 8px;
+        height: 8px;
         background: white;
-        color: #333;
-        margin-right: auto;
-        border: 1px solid #e9ecef;
+        border-radius: 50%;
+        animation: dotPulse 1.4s infinite;
+    }
+
+    .dot:nth-child(2) {
+        animation-delay: 0.2s;
+    }
+
+    .dot:nth-child(3) {
+        animation-delay: 0.4s;
+    }
+
+    @keyframes pulse {
+        0% {
+            transform: scale(1);
+            box-shadow: 0 0 0 0 rgba(106, 0, 255, 0.4);
+        }
+        70% {
+            transform: scale(1.05);
+            box-shadow: 0 0 0 20px rgba(106, 0, 255, 0);
+        }
+        100% {
+            transform: scale(1);
+            box-shadow: 0 0 0 0 rgba(106, 0, 255, 0);
+        }
+    }
+
+    @keyframes dotPulse {
+        0%, 100% {
+            transform: scale(1);
+            opacity: 0.5;
+        }
+        50% {
+            transform: scale(1.2);
+            opacity: 1;
+        }
     }
 
     .input-container {
         display: flex;
         width: 100%;
-        padding: 0;
-        margin: 0;
-    }
-
-    .input-wrapper {
-        display: flex;
-        flex: 1;
-        gap: 0.5rem;
-        background: #f8f9fa;
-        padding: 0.5rem;
-        border-radius: 8px;
-        border: 1px solid #e9ecef;
-        align-items: center;
-        width: 100%;
-        box-sizing: border-box;
-    }
-
-    input {
-        flex: 1;
-        min-width: 0;
-        padding: 0.75rem;
-        border: none;
-        border-radius: 4px;
-        font-size: 1rem;
-        background: transparent;
-        outline: none;
-        width: 100%;
-        box-sizing: border-box;
-    }
-
-    input:focus {
-        outline: none;
-    }
-
-    button {
-        display: inline-flex;
-        align-items: center;
         justify-content: center;
-        padding: 0.5rem;
-        border: none;
-        border-radius: 8px;
-        font-size: 1rem;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        background: #f8f9fa;
-        color: #6a00ff;
-        width: 36px;
-        height: 36px;
-        flex-shrink: 0;
-    }
-
-    button:hover:not(:disabled) {
-        background: #e9ecef;
-        transform: translateY(-1px);
-    }
-
-    button:active:not(:disabled) {
-        transform: translateY(0);
-    }
-
-    button:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
+        padding: 1rem;
     }
 
     .record-button {
@@ -387,6 +484,20 @@
         color: #dc3545;
         cursor: pointer;
         opacity: 1;
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .record-button:hover:not(:disabled) {
+        transform: scale(1.05);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
 
     .record-button:disabled {
@@ -400,50 +511,8 @@
         animation: pulse 1.5s infinite;
     }
 
-    @keyframes pulse {
-        0% {
-            box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4);
-        }
-        70% {
-            box-shadow: 0 0 0 10px rgba(220, 53, 69, 0);
-        }
-        100% {
-            box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
-        }
-    }
-
-    .send-button {
-        background: #6a00ff;
-        color: white;
-    }
-
-    .send-button:hover:not(:disabled) {
-        background: #7c1fff;
-    }
-
     .icon {
-        width: 16px;
-        height: 16px;
-        display: block;
-        flex-shrink: 0;
-    }
-
-    @media (max-width: 480px) {
-        .input-container {
-            flex-direction: column;
-        }
-
-        .input-wrapper {
-            width: 100%;
-        }
-
-        input {
-            width: 100%;
-        }
-
-        button {
-            width: 36px;
-            height: 36px;
-        }
+        width: 32px;
+        height: 32px;
     }
 </style> 
